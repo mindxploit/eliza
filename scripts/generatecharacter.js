@@ -65,6 +65,7 @@ Remember, your primary goal is to assist users within the bounds of your role an
 
 const twitterPostTemplate = `# Areas of Expertise
 {{knowledge}}
+{{permanentKnowledge}}
 
 # About {{agentName}} (@{{twitterUserName}}):
 {{bio}}
