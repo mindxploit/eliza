@@ -1523,6 +1523,11 @@ Text: ${attachment.text}
                     )
                     ]
                     : "",
+            permanentKnowledge: this.character?.permanentKnowledge
+                ? `# Permanent Knowledge\n${this.character.permanentKnowledge
+                    .map((knowledge) => `- ${knowledge}`)
+                    .join("\n")}`
+                : "",
             knowledge: formattedKnowledge,
             knowledgeData: knowledgeData,
             ragKnowledgeData: knowledgeData,

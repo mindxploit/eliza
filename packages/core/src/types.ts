@@ -361,6 +361,9 @@ export interface State {
     /** Optional knowledge data */
     ragKnowledgeData?: RAGKnowledgeItem[];
 
+    /** Optional permanent knowledge */
+    permanentKnowledge?: string;
+
     /** Additional dynamic properties */
     [key: string]: unknown;
 }
@@ -815,6 +818,9 @@ export type Character = {
 
     /** Optional knowledge base */
     knowledge?: (string | { path: string; shared?: boolean } | { directory: string; shared?: boolean })[];
+
+    /** Optional permanent knowledge */
+    permanentKnowledge?: string[];
 
     /** Available plugins */
     plugins: Plugin[];
