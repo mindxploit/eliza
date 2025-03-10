@@ -13,6 +13,7 @@ import {
     validateCharacterConfig,
     ServiceType,
     type Character,
+    stringToUuid,
 } from "@elizaos/core";
 
 // import type { TeeLogQuery, TeeLogService } from "@elizaos/plugin-tee-log";
@@ -243,8 +244,12 @@ export function createApiRouter(
     //     }
     // });
 
-    router.get("/agents/:agentId/:roomId/memories", async (req, res) => {
-        const { agentId, roomId } = validateUUIDParams(req.params, res) ?? {
+    router.get("/agents/:agentId/memories/:roomId", async (req, res) => {
+        const roomId = req.params.roomId ?? stringToUuid(
+            req.params.roomId ?? "default-room-" + req.params.agentId
+        );
+
+        const { agentId } = validateUUIDParams(req.params, res) ?? {
             agentId: null,
             roomId: null,
         };
@@ -267,6 +272,8 @@ export function createApiRouter(
         try {
             const memories = await runtime.messageManager.getMemories({
                 roomId,
+                count: 10,
+                unique: false,
             });
             const response = {
                 agentId,
