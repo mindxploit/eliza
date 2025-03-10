@@ -54,7 +54,7 @@ function validateUUIDParams(
 export function createApiRouter(
     agents: Map<string, IAgentRuntime>,
     directClient: DirectClient
-):Router {
+): Router {
     const router = express.Router();
 
     router.use(cors());
@@ -306,6 +306,87 @@ export function createApiRouter(
             console.error("Error fetching memories:", error);
             res.status(500).json({ error: "Failed to fetch memories" });
         }
+    });
+
+    // Create an agent from a character config or update it by ID
+    router.post("/agents/create/:agentId?", async (req, res) => {
+        elizaLogger.info("req.body", req.body);
+        const character = validateCharacterConfig(req.body.characterConfig);
+
+        let agent: AgentRuntime;
+        if (req.params.agentId) {
+            agent = agents.get(req.params.agentId);
+        }
+
+        // update character
+        if (agent) {
+            // stop agent
+            agent.stop();
+            directClient.unregisterAgent(agent);
+            // if it has a different name, the agentId will change
+        }
+
+        // stores the json data before it is modified with added data
+        const characterJson = { ...req.body.characterConfig };
+        // const knowledge = req.body.knowledge.map((knowledge) => ({
+        //     file: knowledge,
+        //     name: knowledge.name,
+        // }));
+
+        try {
+            validateCharacterConfig(character);
+        } catch (e) {
+            elizaLogger.error(`Error parsing character: ${e}`);
+            res.status(400).json({
+                success: false,
+                message: e.message,
+            });
+            return;
+        }
+
+        // store knowledge here
+
+        // start it up (and register it)
+        try {
+            agent = await directClient.startAgent(character);
+            elizaLogger.log(`${character.name} started`);
+        } catch (e) {
+            elizaLogger.error(`Error starting agent: ${e}`);
+            res.status(500).json({
+                success: false,
+                message: e.message,
+            });
+            return;
+        }
+
+        // store character
+        try {
+            const characterFilename = `${character.name}.json`;
+            const characterDir = path.join(process.cwd(), "..", "characters");
+            const characterFilepath = path.join(characterDir, characterFilename);
+            await fs.promises.mkdir(characterDir, { recursive: true });
+            await fs.promises.writeFile(
+                characterFilepath,
+                JSON.stringify(
+                    { ...characterJson, id: agent.agentId },
+                    null,
+                    2
+                )
+            );
+            elizaLogger.info(
+                `Character stored successfully at ${characterFilepath}`
+            );
+
+        } catch (error) {
+            elizaLogger.error(
+                `Failed to store character or knowledge: ${error.message}`
+            );
+        }
+
+        res.json({
+            id: character.id,
+            character: character,
+        });
     });
 
     // router.get("/tee/agents", async (req, res) => {
