@@ -244,7 +244,7 @@ export function createApiRouter(
     //     }
     // });
 
-    router.get("/agents/:agentId/memories/:roomId", async (req, res) => {
+    router.get("/agents/:agentId/memories/:roomId?", async (req, res) => {
         const roomId = req.params.roomId ?? stringToUuid(
             req.params.roomId ?? "default-room-" + req.params.agentId
         );
