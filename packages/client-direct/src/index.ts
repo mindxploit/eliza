@@ -126,6 +126,26 @@ export class DirectClient {
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
 
+        // Add API key validation middleware
+        this.app.use((req, res, next) => {
+            const apiKey = req.headers['x-api-key'];
+            const validKey = process.env.AGENTICA_API_KEY;
+
+            if (!validKey) {
+                elizaLogger.error('API_KEY environment variable not set');
+                return res.status(500).json({ error: 'Server configuration error' });
+            }
+
+            if (!apiKey) {
+                return res.status(401).json({ error: 'API key required' });
+            }
+
+            if (apiKey !== validKey) {
+                return res.status(401).json({ error: 'Invalid API key' });
+            }
+
+            next();
+        });
         // Serve both uploads and generated images
         this.app.use(
             "/media/uploads",
@@ -338,15 +358,15 @@ export class DirectClient {
 
                 if (!shouldSuppressInitialMessage) {
                     if (message) {
-                        res.json([response, message]);
+                        res.json([response, message, { room: roomId, recentMessages: state.recentMessagesData }]);
                     } else {
-                        res.json([response]);
+                        res.json([response, { room: roomId, recentMessages: state.recentMessagesData }]);
                     }
                 } else {
                     if (message) {
-                        res.json([message]);
+                        res.json([message, { room: roomId, recentMessages: state.recentMessagesData }]);
                     } else {
-                        res.json([]);
+                        res.json([{ room: roomId, recentMessages: state.recentMessagesData }]);
                     }
                 }
             }
@@ -456,34 +476,34 @@ export class DirectClient {
                     const lookAtSchema =
                         nearby.length > 1
                             ? z
-                                  .union(
-                                      nearby.map((item) => z.literal(item)) as [
-                                          z.ZodLiteral<string>,
-                                          z.ZodLiteral<string>,
-                                          ...z.ZodLiteral<string>[],
-                                      ]
-                                  )
-                                  .nullable()
+                                .union(
+                                    nearby.map((item) => z.literal(item)) as [
+                                        z.ZodLiteral<string>,
+                                        z.ZodLiteral<string>,
+                                        ...z.ZodLiteral<string>[],
+                                    ]
+                                )
+                                .nullable()
                             : nearby.length === 1
-                              ? z.literal(nearby[0]).nullable()
-                              : z.null(); // Fallback for empty array
+                                ? z.literal(nearby[0]).nullable()
+                                : z.null(); // Fallback for empty array
 
                     const emoteSchema =
                         availableEmotes.length > 1
                             ? z
-                                  .union(
-                                      availableEmotes.map((item) =>
-                                          z.literal(item)
-                                      ) as [
-                                          z.ZodLiteral<string>,
-                                          z.ZodLiteral<string>,
-                                          ...z.ZodLiteral<string>[],
-                                      ]
-                                  )
-                                  .nullable()
+                                .union(
+                                    availableEmotes.map((item) =>
+                                        z.literal(item)
+                                    ) as [
+                                        z.ZodLiteral<string>,
+                                        z.ZodLiteral<string>,
+                                        ...z.ZodLiteral<string>[],
+                                    ]
+                                )
+                                .nullable()
                             : availableEmotes.length === 1
-                              ? z.literal(availableEmotes[0]).nullable()
-                              : z.null(); // Fallback for empty array
+                                ? z.literal(availableEmotes[0]).nullable()
+                                : z.null(); // Fallback for empty array
 
                     return z.object({
                         lookAt: lookAtSchema,
@@ -868,7 +888,7 @@ export class DirectClient {
                             ),
                             similarity_boost: Number.parseFloat(
                                 process.env.ELEVENLABS_VOICE_SIMILARITY_BOOST ||
-                                    "0.9"
+                                "0.9"
                             ),
                             style: Number.parseFloat(
                                 process.env.ELEVENLABS_VOICE_STYLE || "0.66"
@@ -942,7 +962,7 @@ export class DirectClient {
                             ),
                             similarity_boost: Number.parseFloat(
                                 process.env.ELEVENLABS_VOICE_SIMILARITY_BOOST ||
-                                    "0.9"
+                                "0.9"
                             ),
                             style: Number.parseFloat(
                                 process.env.ELEVENLABS_VOICE_STYLE || "0.66"
