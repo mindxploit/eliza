@@ -367,20 +367,20 @@ export async function generateText({
     stop,
     customSystemPrompt,
 }: // verifiableInference = process.env.VERIFIABLE_INFERENCE_ENABLED === "true",
-// verifiableInferenceOptions,
-{
-    runtime: IAgentRuntime;
-    context: string;
-    modelClass: ModelClass;
-    tools?: Record<string, Tool>;
-    onStepFinish?: (event: StepResult) => Promise<void> | void;
-    maxSteps?: number;
-    stop?: string[];
-    customSystemPrompt?: string;
-    // verifiableInference?: boolean;
-    // verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
-    // verifiableInferenceOptions?: VerifiableInferenceOptions;
-}): Promise<string> {
+    // verifiableInferenceOptions,
+    {
+        runtime: IAgentRuntime;
+        context: string;
+        modelClass: ModelClass;
+        tools?: Record<string, Tool>;
+        onStepFinish?: (event: StepResult) => Promise<void> | void;
+        maxSteps?: number;
+        stop?: string[];
+        customSystemPrompt?: string;
+        // verifiableInference?: boolean;
+        // verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+        // verifiableInferenceOptions?: VerifiableInferenceOptions;
+    }): Promise<string> {
     if (!context) {
         console.error("generateText context is empty");
         return "";
@@ -1773,54 +1773,54 @@ export const generateImage = async (
         runtime.imageModelProvider === runtime.modelProvider
             ? runtime.token
             : (() => {
-                  // First try to match the specific provider
-                  switch (runtime.imageModelProvider) {
-                      case ModelProviderName.HEURIST:
-                          return runtime.getSetting("HEURIST_API_KEY");
-                      case ModelProviderName.TOGETHER:
-                          return runtime.getSetting("TOGETHER_API_KEY");
-                      case ModelProviderName.FAL:
-                          return runtime.getSetting("FAL_API_KEY");
-                      case ModelProviderName.OPENAI:
-                          return runtime.getSetting("OPENAI_API_KEY");
-                      case ModelProviderName.VENICE:
-                          return runtime.getSetting("VENICE_API_KEY");
-                      case ModelProviderName.LIVEPEER:
-                          return runtime.getSetting("LIVEPEER_GATEWAY_URL");
-                      case ModelProviderName.SECRETAI:
-                          return runtime.getSetting("SECRET_AI_API_KEY");
-                      case ModelProviderName.NEARAI:
-                          try {
-                              // Read auth config from ~/.nearai/config.json if it exists
-                              const config = JSON.parse(
-                                  fs.readFileSync(
-                                      path.join(
-                                          os.homedir(),
-                                          ".nearai/config.json"
-                                      ),
-                                      "utf8"
-                                  )
-                              );
-                              return JSON.stringify(config?.auth);
-                          } catch (e) {
-                              elizaLogger.warn(
-                                  `Error loading NEAR AI config. The environment variable NEARAI_API_KEY will be used. ${e}`
-                              );
-                          }
-                          return runtime.getSetting("NEARAI_API_KEY");
-                      default:
-                          // If no specific match, try the fallback chain
-                          return (
-                              runtime.getSetting("HEURIST_API_KEY") ??
-                              runtime.getSetting("NINETEEN_AI_API_KEY") ??
-                              runtime.getSetting("TOGETHER_API_KEY") ??
-                              runtime.getSetting("FAL_API_KEY") ??
-                              runtime.getSetting("OPENAI_API_KEY") ??
-                              runtime.getSetting("VENICE_API_KEY") ??
-                              runtime.getSetting("LIVEPEER_GATEWAY_URL")
-                          );
-                  }
-              })();
+                // First try to match the specific provider
+                switch (runtime.imageModelProvider) {
+                    case ModelProviderName.HEURIST:
+                        return runtime.getSetting("HEURIST_API_KEY");
+                    case ModelProviderName.TOGETHER:
+                        return runtime.getSetting("TOGETHER_API_KEY");
+                    case ModelProviderName.FAL:
+                        return runtime.getSetting("FAL_API_KEY");
+                    case ModelProviderName.OPENAI:
+                        return runtime.getSetting("OPENAI_API_KEY");
+                    case ModelProviderName.VENICE:
+                        return runtime.getSetting("VENICE_API_KEY");
+                    case ModelProviderName.LIVEPEER:
+                        return runtime.getSetting("LIVEPEER_GATEWAY_URL");
+                    case ModelProviderName.SECRETAI:
+                        return runtime.getSetting("SECRET_AI_API_KEY");
+                    case ModelProviderName.NEARAI:
+                        try {
+                            // Read auth config from ~/.nearai/config.json if it exists
+                            const config = JSON.parse(
+                                fs.readFileSync(
+                                    path.join(
+                                        os.homedir(),
+                                        ".nearai/config.json"
+                                    ),
+                                    "utf8"
+                                )
+                            );
+                            return JSON.stringify(config?.auth);
+                        } catch (e) {
+                            elizaLogger.warn(
+                                `Error loading NEAR AI config. The environment variable NEARAI_API_KEY will be used. ${e}`
+                            );
+                        }
+                        return runtime.getSetting("NEARAI_API_KEY");
+                    default:
+                        // If no specific match, try the fallback chain
+                        return (
+                            runtime.getSetting("HEURIST_API_KEY") ??
+                            runtime.getSetting("NINETEEN_AI_API_KEY") ??
+                            runtime.getSetting("TOGETHER_API_KEY") ??
+                            runtime.getSetting("FAL_API_KEY") ??
+                            runtime.getSetting("OPENAI_API_KEY") ??
+                            runtime.getSetting("VENICE_API_KEY") ??
+                            runtime.getSetting("LIVEPEER_GATEWAY_URL")
+                        );
+                }
+            })();
     try {
         if (runtime.imageModelProvider === ModelProviderName.HEURIST) {
             const response = await fetch(
@@ -1939,13 +1939,13 @@ export const generateImage = async (
                 seed: data.seed ?? 6252023,
                 ...(runtime.getSetting("FAL_AI_LORA_PATH")
                     ? {
-                          loras: [
-                              {
-                                  path: runtime.getSetting("FAL_AI_LORA_PATH"),
-                                  scale: 1,
-                              },
-                          ],
-                      }
+                        loras: [
+                            {
+                                path: runtime.getSetting("FAL_AI_LORA_PATH"),
+                                scale: 1,
+                            },
+                        ],
+                    }
                     : {}),
             };
 
@@ -2217,9 +2217,9 @@ export const generateObject = async ({
     stop,
     mode = "json",
 }: // verifiableInference = false,
-// verifiableInferenceAdapter,
-// verifiableInferenceOptions,
-GenerationOptions): Promise<GenerateObjectResult<unknown>> => {
+    // verifiableInferenceAdapter,
+    // verifiableInferenceOptions,
+    GenerationOptions): Promise<GenerateObjectResult<unknown>> => {
     if (!context) {
         const errorMessage = "generateObject context is empty";
         console.error(errorMessage);
@@ -2362,10 +2362,10 @@ async function handleOpenAI({
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const endpoint = runtime.character.modelEndpointOverride || getEndpoint(provider);
     const baseURL = getCloudflareGatewayBaseURL(runtime, "openai") || endpoint;
-    const openai = createOpenAI({ 
-        apiKey, 
+    const openai = createOpenAI({
+        apiKey,
         baseURL,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return aiGenerateObject({
         model: openai.languageModel(model),
@@ -2401,10 +2401,10 @@ async function handleAnthropic({
     const baseURL = getCloudflareGatewayBaseURL(runtime, "anthropic");
     elizaLogger.debug("Anthropic handleAnthropic baseURL:", { baseURL });
 
-    const anthropic = createAnthropic({ 
-        apiKey, 
+    const anthropic = createAnthropic({
+        apiKey,
         baseURL,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return await aiGenerateObject({
         model: anthropic.languageModel(model),
@@ -2432,10 +2432,10 @@ async function handleGrok({
     modelOptions,
     runtime,
 }: ProviderOptions): Promise<GenerationResult> {
-    const grok = createOpenAI({ 
-        apiKey, 
+    const grok = createOpenAI({
+        apiKey,
         baseURL: models.grok.endpoint,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return aiGenerateObject({
         model: grok.languageModel(model, { parallelToolCalls: false }),
@@ -2467,10 +2467,10 @@ async function handleGroq({
     const baseURL = getCloudflareGatewayBaseURL(runtime, "groq");
     elizaLogger.debug("Groq handleGroq baseURL:", { baseURL });
 
-    const groq = createGroq({ 
-        apiKey, 
+    const groq = createGroq({
+        apiKey,
         baseURL,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return await aiGenerateObject({
         model: groq.languageModel(model),
@@ -2500,7 +2500,7 @@ async function handleGoogle({
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const google = createGoogleGenerativeAI({
         apiKey,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return aiGenerateObject({
         model: google(model),
@@ -2554,10 +2554,10 @@ async function handleRedPill({
     modelOptions,
     runtime,
 }: ProviderOptions): Promise<GenerationResult> {
-    const redPill = createOpenAI({ 
-        apiKey, 
+    const redPill = createOpenAI({
+        apiKey,
         baseURL: models.redpill.endpoint,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return aiGenerateObject({
         model: redPill.languageModel(model),
@@ -2647,10 +2647,10 @@ async function handleDeepSeek({
     modelOptions,
     runtime,
 }: ProviderOptions): Promise<GenerationResult> {
-    const openai = createOpenAI({ 
-        apiKey, 
+    const openai = createOpenAI({
+        apiKey,
         baseURL: models.deepseek.endpoint,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     return aiGenerateObject({
         model: openai.languageModel(model),
@@ -2773,10 +2773,10 @@ async function handleNearAi({
     modelOptions,
     runtime,
 }: ProviderOptions): Promise<GenerationResult> {
-    const nearai = createOpenAI({ 
-        apiKey, 
+    const nearai = createOpenAI({
+        apiKey,
         baseURL: models.nearai.endpoint,
-        fetch: runtime.fetch 
+        fetch: runtime.fetch
     });
     const settings = schema ? { structuredOutputs: true } : undefined;
     return aiGenerateObject({
