@@ -1,5 +1,7 @@
 node_modules
-!node_modules/@elizaos-plugins
+!node_modules/@elizaos-plugins/
+!node_modules/@elizaos-plugins/**
+
 /out
 
 .env

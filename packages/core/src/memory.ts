@@ -180,12 +180,12 @@ export class MemoryManager implements IMemoryManager {
             return;
         }
 
-        elizaLogger.log("Creating Memory", memory.id, memory.content.text);
+        elizaLogger.log("Creating Memory", "AgentId", memory.agentId, "Id", memory.id, "Content", memory.content.text);
 
         await this.runtime.databaseAdapter.createMemory(
             memory,
             this.tableName,
-            unique
+            unique,
         );
     }
 
