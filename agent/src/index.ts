@@ -836,16 +836,15 @@ const startAgents = async () => {
     const args = parseArguments();
     const charactersArg = args.characters || args.character;
 
-    // Load all characters from the characters directory by default
-    const characterFiles = fs.readdirSync(path.join(__dirname, "..", "..", "characters")).filter(file => file.endsWith('.json'));
-    let characters = await Promise.all(characterFiles.map(async (file) => {
-        const filePath = path.join(__dirname, "..", "..", "characters", file);
-        const characterData = await fs.promises.readFile(filePath, 'utf-8');
-        return JSON.parse(characterData);
-    }));
 
+    let characters: Character[] = [];
     if ((charactersArg) || hasValidRemoteUrls()) {
         characters = await loadCharacters(charactersArg);
+    } else {
+        // Load all characters from the characters directory by default
+        const characterFiles = fs.readdirSync(path.join(__dirname, "..", "..", "characters")).filter(file => file.endsWith('.json'));
+        const characterPaths = characterFiles.map(file => path.join(__dirname, "..", "..", "characters", file));
+        characters = await loadCharacters(characterPaths.join(','));
     }
 
     try {
