@@ -6,7 +6,7 @@ export const messageCompletionFooter = `\nResponse format should be formatted in
 { "user": "{{agentName}}", "text": "<string>", "action": "<string>" }
 \`\`\`
 
-The “action” field should be one of the options in [Available Actions] and the "text" field should be the response you want to send.
+The "action" field should be one of the options in [Available Actions] and the "text" field should be the response you want to send.
 `;
 
 export const shouldRespondFooter = `The available options are [RESPOND], [IGNORE], or [STOP]. Choose the most appropriate option.
@@ -27,12 +27,12 @@ export const parseShouldRespondFromText = (
     return match
         ? (match[0].toUpperCase() as "RESPOND" | "IGNORE" | "STOP")
         : text.includes("RESPOND")
-        ? "RESPOND"
-        : text.includes("IGNORE")
-        ? "IGNORE"
-        : text.includes("STOP")
-        ? "STOP"
-        : null;
+            ? "RESPOND"
+            : text.includes("IGNORE")
+                ? "IGNORE"
+                : text.includes("STOP")
+                    ? "STOP"
+                    : null;
 };
 
 export const booleanFooter = `Respond with only a YES or a NO.`;
@@ -200,18 +200,32 @@ export function extractAttributes(
 
     if (!attributesToExtract || attributesToExtract.length === 0) {
         // Extract all attributes if no specific attributes are provided
-        const matches = response.matchAll(/"([^"]+)"\s*:\s*"([^"]*)"?/g);
-        for (const match of matches) {
-            attributes[match[1]] = match[2];
+        // Improved regex to handle embedded quotes
+        const regex = /"([^"]+)"\s*:\s*"((?:\\"|[^"])*?)"/g;
+        let match;
+        while ((match = regex.exec(response)) !== null) {
+            // Convert escaped newlines and quotes to actual newlines and quotes
+            let value = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+            // Convert double newlines to single newlines
+            // value = value.replace(/\n\n/g, '\n');
+            attributes[match[1]] = value;
         }
     } else {
         // Extract only specified attributes
         attributesToExtract.forEach((attribute) => {
-            const match = response.match(
-                new RegExp(`"${attribute}"\\s*:\\s*"([^"]*)"?`, "i")
-            );
-            if (match) {
-                attributes[attribute] = match[1];
+            // Updated regex to handle quotes within the content
+            try {
+                const regex = new RegExp(`"${attribute}"\\s*:\\s*"((?:\\\\"|[^"])*?)"`, "i");
+                const match = response.match(regex);
+                if (match) {
+                    // Convert escaped newlines and quotes to actual newlines and quotes
+                    let value = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                    // Convert double newlines to single newlines
+                    value = value.replace(/\n\n/g, '\n');
+                    attributes[attribute] = value;
+                }
+            } catch (e) {
+                console.error(`Error with regex for attribute ${attribute}:`, e);
             }
         });
     }
@@ -238,16 +252,25 @@ export const normalizeJsonString = (str: string) => {
     // Remove extra spaces after '{' and before '}'
     str = str.replace(/\{\s+/, '{').replace(/\s+\}/, '}').trim();
 
+    // Convert escaped newlines to actual newlines
+    str = str.replace(/\\n/g, '\n');
+
     // "key": unquotedValue → "key": "unquotedValue"
     str = str.replace(
-      /("[\w\d_-]+")\s*: \s*(?!"|\[)([\s\S]+?)(?=(,\s*"|\}$))/g,
-      '$1: "$2"',
+        /("[\w\d_-]+")\s*: \s*(?!"|\[)([\s\S]+?)(?=(,\s*"|\}$))/g,
+        (match, key, value) => {
+            // Preserve newlines in the value
+            return `${key}: "${value}"`;
+        }
     );
 
     // "key": 'value' → "key": "value"
     str = str.replace(
-      /"([^"]+)"\s*:\s*'([^']*)'/g,
-      (_, key, value) => `"${key}": "${value}"`,
+        /"([^"]+)"\s*:\s*'([^']*)'/g,
+        (_, key, value) => {
+            // Preserve newlines in the value
+            return `"${key}": "${value}"`;
+        }
     );
 
     // "key": someWord → "key": "someWord"
@@ -255,6 +278,10 @@ export const normalizeJsonString = (str: string) => {
 
     // Replace adjacent quote pairs with a single double quote
     str = str.replace(/(?:"')|(?:'")/g, '"');
+
+    // Convert newlines back to escaped newlines
+    str = str.replace(/\n/g, '\\n');
+
     return str;
 };
 
@@ -270,7 +297,8 @@ export function cleanJsonResponse(response: string): string {
     return response
         .replace(/```json\s*/g, "") // Remove ```json
         .replace(/```\s*/g, "") // Remove any remaining ```
-        .replace(/(\r\n|\n|\r)/g, "") // Remove line breaks
+        .replace(/\r\n/g, '\n') // Normalize line endings
+        .replace(/\r/g, '\n') // Normalize line endings
         .trim();
 }
 

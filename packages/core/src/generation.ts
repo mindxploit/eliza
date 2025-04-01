@@ -1716,8 +1716,10 @@ export async function generateMessageResponse({
                 modelClass,
             });
 
+            elizaLogger.log("response pre parse:", response);
             // try parsing the response as JSON, if null then try again
             const parsedContent = parseJSONObjectFromText(response) as Content;
+            elizaLogger.log("response parsed:", parsedContent);
             if (!parsedContent) {
                 elizaLogger.debug("parsedContent is null, retrying");
                 continue;
@@ -2394,10 +2396,10 @@ async function handleAnthropic({
     runtime,
 }: ProviderOptions): Promise<GenerationResult> {
     elizaLogger.debug("Handling Anthropic request with Cloudflare check");
-    if (mode === "json") {
-        elizaLogger.warn("Anthropic mode is set to json, changing to auto");
-        mode = "auto";
-    }
+    // if (mode === "json") {
+    //     elizaLogger.warn("Anthropic mode is set to json, changing to auto");
+    //     mode = "auto";
+    // }
     const baseURL = getCloudflareGatewayBaseURL(runtime, "anthropic");
     elizaLogger.debug("Anthropic handleAnthropic baseURL:", { baseURL });
 
@@ -2406,12 +2408,13 @@ async function handleAnthropic({
         baseURL,
         fetch: runtime.fetch
     });
+    elizaLogger.debug("Anthropic provider all info:", { schema, schemaName, schemaDescription, mode, modelOptions });
     return await aiGenerateObject({
         model: anthropic.languageModel(model),
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: 'json',
         ...modelOptions,
     });
 }
