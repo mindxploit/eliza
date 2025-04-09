@@ -214,46 +214,19 @@ export function createApiRouter(
         });
     });
 
-    // router.get("/agents/:agentId/channels", async (req, res) => {
-    //     const { agentId } = validateUUIDParams(req.params, res) ?? {
-    //         agentId: null,
-    //     };
-    //     if (!agentId) return;
-
-    //     const runtime = agents.get(agentId);
-
-    //     if (!runtime) {
-    //         res.status(404).json({ error: "Runtime not found" });
-    //         return;
-    //     }
-
-    //     const API_TOKEN = runtime.getSetting("DISCORD_API_TOKEN") as string;
-    //     const rest = new REST({ version: "10" }).setToken(API_TOKEN);
-
-    //     try {
-    //         const guilds = (await rest.get(Routes.userGuilds())) as Array<any>;
-
-    //         res.json({
-    //             id: runtime.agentId,
-    //             guilds: guilds,
-    //             serverCount: guilds.length,
-    //         });
-    //     } catch (error) {
-    //         console.error("Error fetching guilds:", error);
-    //         res.status(500).json({ error: "Failed to fetch guilds" });
-    //     }
-    // });
-
     router.get("/agents/:agentId/memories/:roomId?", async (req, res) => {
         const roomId = req.params.roomId ?? stringToUuid(
             req.params.roomId ?? "default-room-" + req.params.agentId
         );
+        elizaLogger.info(req.params, "req.params");
 
         const { agentId } = validateUUIDParams(req.params, res) ?? {
             agentId: null,
             roomId: null,
         };
         if (!agentId || !roomId) return;
+
+        elizaLogger.info("validation passed", agentId, roomId);
 
         let runtime = agents.get(agentId);
 
@@ -395,103 +368,6 @@ export function createApiRouter(
             character: character,
         });
     });
-
-    // router.get("/tee/agents", async (req, res) => {
-    //     try {
-    //         const allAgents = [];
-
-    //         for (const agentRuntime of agents.values()) {
-    //             const teeLogService = agentRuntime
-    //                 .getService<TeeLogService>(ServiceType.TEE_LOG)
-    //                 .getInstance();
-
-    //             const agents = await teeLogService.getAllAgents();
-    //             allAgents.push(...agents);
-    //         }
-
-    //         const runtime: AgentRuntime = agents.values().next().value;
-    //         const teeLogService = runtime
-    //             .getService<TeeLogService>(ServiceType.TEE_LOG)
-    //             .getInstance();
-    //         const attestation = await teeLogService.generateAttestation(
-    //             JSON.stringify(allAgents)
-    //         );
-    //         res.json({ agents: allAgents, attestation: attestation });
-    //     } catch (error) {
-    //         elizaLogger.error("Failed to get TEE agents:", error);
-    //         res.status(500).json({
-    //             error: "Failed to get TEE agents",
-    //         });
-    //     }
-    // });
-
-    // router.get("/tee/agents/:agentId", async (req, res) => {
-    //     try {
-    //         const agentId = req.params.agentId;
-    //         const agentRuntime = agents.get(agentId);
-    //         if (!agentRuntime) {
-    //             res.status(404).json({ error: "Agent not found" });
-    //             return;
-    //         }
-
-    //         const teeLogService = agentRuntime
-    //             .getService<TeeLogService>(ServiceType.TEE_LOG)
-    //             .getInstance();
-
-    //         const teeAgent = await teeLogService.getAgent(agentId);
-    //         const attestation = await teeLogService.generateAttestation(
-    //             JSON.stringify(teeAgent)
-    //         );
-    //         res.json({ agent: teeAgent, attestation: attestation });
-    //     } catch (error) {
-    //         elizaLogger.error("Failed to get TEE agent:", error);
-    //         res.status(500).json({
-    //             error: "Failed to get TEE agent",
-    //         });
-    //     }
-    // });
-
-    // router.post(
-    //     "/tee/logs",
-    //     async (req: express.Request, res: express.Response) => {
-    //         try {
-    //             const query = req.body.query || {};
-    //             const page = Number.parseInt(req.body.page) || 1;
-    //             const pageSize = Number.parseInt(req.body.pageSize) || 10;
-
-    //             const teeLogQuery: TeeLogQuery = {
-    //                 agentId: query.agentId || "",
-    //                 roomId: query.roomId || "",
-    //                 userId: query.userId || "",
-    //                 type: query.type || "",
-    //                 containsContent: query.containsContent || "",
-    //                 startTimestamp: query.startTimestamp || undefined,
-    //                 endTimestamp: query.endTimestamp || undefined,
-    //             };
-    //             const agentRuntime: AgentRuntime = agents.values().next().value;
-    //             const teeLogService = agentRuntime
-    //                 .getService<TeeLogService>(ServiceType.TEE_LOG)
-    //                 .getInstance();
-    //             const pageQuery = await teeLogService.getLogs(
-    //                 teeLogQuery,
-    //                 page,
-    //                 pageSize
-    //             );
-    //             const attestation = await teeLogService.generateAttestation(
-    //                 JSON.stringify(pageQuery)
-    //             );
-    //             res.json({
-    //                 logs: pageQuery,
-    //                 attestation: attestation,
-    //             });
-    //         } catch (error) {
-    //             elizaLogger.error("Failed to get TEE logs:", error);
-    //             res.status(500).json({
-    //                 error: "Failed to get TEE logs",
-    //             });
-    //         }
-    //     }
-    // );
 
     router.post("/agent/start", async (req, res) => {
         const { characterPath, characterJson } = req.body;

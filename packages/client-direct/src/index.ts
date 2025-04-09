@@ -216,10 +216,8 @@ export class DirectClient {
             upload.single("file"),
             async (req: express.Request, res: express.Response) => {
                 const agentId = req.params.agentId;
-                const roomId = stringToUuid(
-                    req.body.roomId ?? "default-room-" + agentId
-                );
-                const userId = stringToUuid(req.body.userId ?? "user");
+                const roomId = req.body.roomId ?? "default-room-" + agentId;
+                const userId = req.body.userId ?? "user"
 
                 let runtime = this.agents.get(agentId);
 
