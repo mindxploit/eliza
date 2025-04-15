@@ -308,10 +308,10 @@ export function createApiRouter(
 
         // stores the json data before it is modified with added data
         const characterJson = { ...req.body.characterConfig };
-        // const knowledge = req.body.knowledge.map((knowledge) => ({
-        //     file: knowledge,
-        //     name: knowledge.name,
-        // }));
+        const knowledge = req.body?.knowledge?.map((knowledge) => ({
+            file: knowledge,
+            name: knowledge.name,
+        }));
 
         try {
             validateCharacterConfig(character);
@@ -323,8 +323,6 @@ export function createApiRouter(
             });
             return;
         }
-
-        // store knowledge here
 
         // start it up (and register it)
         try {
@@ -339,8 +337,9 @@ export function createApiRouter(
             return;
         }
 
-        // store character
+        // store character and knowledge
         try {
+            // character
             const characterFilename = `${character.name}.json`;
             const characterDir = path.join(process.cwd(), "..", "characters");
             const characterFilepath = path.join(characterDir, characterFilename);
@@ -353,6 +352,22 @@ export function createApiRouter(
                     2
                 )
             );
+            // knowledge
+            if (knowledge && knowledge.length > 0) {
+                const knowledgeDir = path.join(process.cwd(), "..", "knowledge");
+                await fs.promises.mkdir(knowledgeDir, { recursive: true });
+
+                for (const item of knowledge) {
+                    if (item && item.file) {
+                        const knowledgeFilepath = path.join(knowledgeDir, `${item.name || item.file.name}`);
+                        await fs.promises.writeFile(
+                            knowledgeFilepath,
+                            JSON.stringify(item.file, null, 2)
+                        );
+                    }
+                }
+            }
+
             elizaLogger.info(
                 `Character stored successfully at ${characterFilepath}`
             );
