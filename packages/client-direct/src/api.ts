@@ -362,7 +362,7 @@ export function createApiRouter(
                         const knowledgeFilepath = path.join(knowledgeDir, `${item.name || item.file.name}`);
                         await fs.promises.writeFile(
                             knowledgeFilepath,
-                            JSON.stringify(item.file, null, 2)
+                            item.file
                         );
                     }
                 }
