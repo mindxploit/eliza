@@ -313,21 +313,6 @@ export function createApiRouter(
             name: knowledge.name,
         }));
 
-        // knowledge
-        if (knowledge && knowledge.length > 0) {
-            const knowledgeDir = path.join(process.cwd(), "..", "knowledge");
-            await fs.promises.mkdir(knowledgeDir, { recursive: true });
-
-            for (const item of knowledge) {
-                if (item && item.file) {
-                    const knowledgeFilepath = path.join(knowledgeDir, `${item.name || item.file.name}`);
-                    await fs.promises.writeFile(
-                        knowledgeFilepath,
-                        item.file
-                    );
-                }
-            }
-        }
 
         try {
             validateCharacterConfig(character);
@@ -351,6 +336,22 @@ export function createApiRouter(
                 message: e.message,
             });
             return;
+        }
+
+        // knowledge
+        if (knowledge && knowledge.length > 0) {
+            const knowledgeDir = path.join(process.cwd(), "..", "knowledge");
+            await fs.promises.mkdir(knowledgeDir, { recursive: true });
+
+            for (const item of knowledge) {
+                if (item && item.file) {
+                    const knowledgeFilepath = path.join(knowledgeDir, `${item.name || item.file.name}`);
+                    await fs.promises.writeFile(
+                        knowledgeFilepath,
+                        item.file
+                    );
+                }
+            }
         }
 
         // store character and knowledge
