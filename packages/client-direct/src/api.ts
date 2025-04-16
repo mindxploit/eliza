@@ -1,5 +1,5 @@
 import express from "express";
-import { Router } from 'express';
+import { Router } from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import path from "path";
@@ -28,7 +28,7 @@ interface UUIDParams {
 
 function validateUUIDParams(
     params: { agentId: string; roomId?: string },
-    res: express.Response
+    res: express.Response,
 ): UUIDParams | null {
     const agentId = validateUuid(params.agentId);
     if (!agentId) {
@@ -54,7 +54,7 @@ function validateUUIDParams(
 
 export function createApiRouter(
     agents: Map<string, IAgentRuntime>,
-    directClient: DirectClient
+    directClient: DirectClient,
 ): Router {
     const router = express.Router();
 
@@ -64,7 +64,7 @@ export function createApiRouter(
     router.use(
         express.json({
             limit: getEnvVariable("EXPRESS_MAX_PAYLOAD") || "100kb",
-        })
+        }),
     );
 
     router.get("/", (req, res) => {
@@ -84,7 +84,7 @@ export function createApiRouter(
         res.json({ agents: agentsList });
     });
 
-    router.get('/storage', async (req, res) => {
+    router.get("/storage", async (req, res) => {
         try {
             const uploadDir = path.join(process.cwd(), "data", "characters");
             const files = await fs.promises.readdir(uploadDir);
@@ -186,7 +186,7 @@ export function createApiRouter(
                 const uploadDir = path.join(
                     process.cwd(),
                     "data",
-                    "characters"
+                    "characters",
                 );
                 const filepath = path.join(uploadDir, filename);
                 await fs.promises.mkdir(uploadDir, { recursive: true });
@@ -195,15 +195,15 @@ export function createApiRouter(
                     JSON.stringify(
                         { ...characterJson, id: agent.agentId },
                         null,
-                        2
-                    )
+                        2,
+                    ),
                 );
                 elizaLogger.info(
-                    `Character stored successfully at ${filepath}`
+                    `Character stored successfully at ${filepath}`,
                 );
             } catch (error) {
                 elizaLogger.error(
-                    `Failed to store character: ${error.message}`
+                    `Failed to store character: ${error.message}`,
                 );
             }
         }
@@ -215,9 +215,11 @@ export function createApiRouter(
     });
 
     router.get("/agents/:agentId/memories/:roomId?", async (req, res) => {
-        const roomId = req.params.roomId ?? stringToUuid(
-            req.params.roomId ?? "default-room-" + req.params.agentId
-        );
+        const roomId =
+            req.params.roomId ??
+            stringToUuid(
+                req.params.roomId ?? "default-room-" + req.params.agentId,
+            );
         elizaLogger.info(req.params, "req.params");
 
         const { agentId } = validateUUIDParams(req.params, res) ?? {
@@ -226,14 +228,12 @@ export function createApiRouter(
         };
         if (!agentId || !roomId) return;
 
-        elizaLogger.info("validation passed", agentId, roomId);
-
         let runtime = agents.get(agentId);
 
         // if runtime is null, look for runtime with the same name
         if (!runtime) {
             runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase(),
             );
         }
 
@@ -271,7 +271,7 @@ export function createApiRouter(
                                 description: attachment.description,
                                 text: attachment.text,
                                 contentType: attachment.contentType,
-                            })
+                            }),
                         ),
                     },
                     embedding: memory.embedding,
@@ -342,39 +342,45 @@ export function createApiRouter(
             // character
             const characterFilename = `${character.name}.json`;
             const characterDir = path.join(process.cwd(), "..", "characters");
-            const characterFilepath = path.join(characterDir, characterFilename);
+            const characterFilepath = path.join(
+                characterDir,
+                characterFilename,
+            );
             await fs.promises.mkdir(characterDir, { recursive: true });
             await fs.promises.writeFile(
                 characterFilepath,
                 JSON.stringify(
                     { ...characterJson, id: agent.agentId },
                     null,
-                    2
-                )
+                    2,
+                ),
             );
             // knowledge
             if (knowledge && knowledge.length > 0) {
-                const knowledgeDir = path.join(process.cwd(), "..", "knowledge");
-                await fs.promises.mkdir(knowledgeDir, { recursive: true });
+                elizaLogger.info("Starting to store knowledge");
+
+                const knowledgePath = path.join(
+                    process.cwd(),
+                    "..",
+                    "characters",
+                    "knowledge",
+                    character.name,
+                );
+                await fs.promises.mkdir(knowledgePath, { recursive: true });
 
                 for (const item of knowledge) {
                     if (item && item.file) {
-                        const knowledgeFilepath = path.join(knowledgeDir, `${item.name || item.file.name}`);
-                        await fs.promises.writeFile(
-                            knowledgeFilepath,
-                            item.file
-                        );
+                        await fs.promises.writeFile(knowledgePath, item.file);
                     }
                 }
             }
 
             elizaLogger.info(
-                `Character stored successfully at ${characterFilepath}`
+                `Character stored successfully at ${characterFilepath}`,
             );
-
         } catch (error) {
             elizaLogger.error(
-                `Failed to store character or knowledge: ${error.message}`
+                `Failed to store character or knowledge: ${error.message}`,
             );
         }
 
@@ -393,7 +399,7 @@ export function createApiRouter(
             if (characterJson) {
                 character = await directClient.jsonToCharacter(
                     characterPath,
-                    characterJson
+                    characterJson,
                 );
             } else if (characterPath) {
                 character =
