@@ -370,6 +370,7 @@ export function createApiRouter(
 
     // Dedicated endpoint for knowledge uploads using formdata
     router.post("/agents/:agentId/knowledge", async (req, res) => {
+        elizaLogger.info("req.body knowledge", req.body);
         const { agentId } = validateUUIDParams(req.params, res) ?? {
             agentId: null,
         };
@@ -380,7 +381,7 @@ export function createApiRouter(
             return res.status(404).json({ error: "Agent not found" });
         }
 
-        // Setup multer for file uploads
+        // Create storage configuration specific to this agent
         const storage = multer.diskStorage({
             destination: function (req, file, cb) {
                 const knowledgePath = path.join(
@@ -399,14 +400,17 @@ export function createApiRouter(
             }
         });
 
-        const upload = multer({ storage: storage }).array('files');
+        // Create upload middleware for this specific request
+        const upload = multer({ storage }).array('files');
 
+        // Use the middleware
         upload(req, res, function (err) {
             if (err) {
                 elizaLogger.error(`Error uploading knowledge: ${err.message}`);
                 return res.status(500).json({ error: err.message });
             }
 
+            // Type safety for files
             const files = Array.isArray(req.files) ? req.files.map(file => ({
                 originalname: file.originalname,
                 filename: file.filename,
