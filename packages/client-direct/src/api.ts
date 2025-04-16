@@ -4,9 +4,12 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
+import multer from "multer";
+
 
 import {
     type AgentRuntime,
+    type IAgentRuntime,
     elizaLogger,
     getEnvVariable,
     type UUID,
@@ -124,7 +127,7 @@ export function createApiRouter(
         };
         if (!agentId) return;
 
-        const agent: AgentRuntime = agents.get(agentId);
+        const agent = agents.get(agentId) as unknown as AgentRuntime;
 
         if (agent) {
             agent.stop();
@@ -141,7 +144,7 @@ export function createApiRouter(
         };
         if (!agentId) return;
 
-        let agent: AgentRuntime = agents.get(agentId);
+        let agent = agents.get(agentId) as unknown as AgentRuntime;
 
         // update character
         if (agent) {
@@ -215,11 +218,9 @@ export function createApiRouter(
     });
 
     router.get("/agents/:agentId/memories/:roomId?", async (req, res) => {
-        const roomId =
-            req.params.roomId ??
-            stringToUuid(
-                req.params.roomId ?? "default-room-" + req.params.agentId,
-            );
+        const roomId = req.params.roomId
+            ? stringToUuid(req.params.roomId)
+            : stringToUuid("default-room-" + req.params.agentId);
         elizaLogger.info(req.params, "req.params");
 
         const { agentId } = validateUUIDParams(req.params, res) ?? {
@@ -228,13 +229,13 @@ export function createApiRouter(
         };
         if (!agentId || !roomId) return;
 
-        let runtime = agents.get(agentId);
+        let runtime = agents.get(agentId) as unknown as AgentRuntime;
 
         // if runtime is null, look for runtime with the same name
         if (!runtime) {
             runtime = Array.from(agents.values()).find(
                 (a) => a.character.name.toLowerCase() === agentId.toLowerCase(),
-            );
+            ) as unknown as AgentRuntime;
         }
 
         if (!runtime) {
@@ -295,7 +296,7 @@ export function createApiRouter(
 
         let agent: AgentRuntime;
         if (req.params.agentId) {
-            agent = agents.get(req.params.agentId);
+            agent = agents.get(req.params.agentId) as unknown as AgentRuntime;
         }
 
         // update character
@@ -308,10 +309,6 @@ export function createApiRouter(
 
         // stores the json data before it is modified with added data
         const characterJson = { ...req.body.characterConfig };
-        const knowledge = req.body?.knowledge?.map((knowledge) => ({
-            file: knowledge,
-            name: knowledge.name,
-        }));
 
         try {
             validateCharacterConfig(character);
@@ -337,7 +334,7 @@ export function createApiRouter(
             return;
         }
 
-        // store character and knowledge
+        // store character
         try {
             // character
             const characterFilename = `${character.name}.json`;
@@ -355,26 +352,6 @@ export function createApiRouter(
                     2,
                 ),
             );
-            // knowledge
-            if (knowledge && knowledge.length > 0) {
-                elizaLogger.info("Starting to store knowledge");
-
-                const knowledgePath = path.join(
-                    process.cwd(),
-                    "..",
-                    "characters",
-                    "knowledge",
-                    character.name,
-                );
-                await fs.promises.mkdir(knowledgePath, { recursive: true });
-
-                for (const item of knowledge) {
-                    if (item && item.file) {
-                        await fs.promises.writeFile(knowledgePath, item.file);
-                    }
-                }
-            }
-
             elizaLogger.info(
                 `Character stored successfully at ${characterFilepath}`,
             );
@@ -387,6 +364,58 @@ export function createApiRouter(
         res.json({
             id: character.id,
             character: character,
+        });
+    });
+
+
+    // Dedicated endpoint for knowledge uploads using formdata
+    router.post("/agents/:agentId/knowledge", async (req, res) => {
+        const { agentId } = validateUUIDParams(req.params, res) ?? {
+            agentId: null,
+        };
+        if (!agentId) return;
+
+        const agent = agents.get(agentId) as unknown as AgentRuntime;
+        if (!agent) {
+            return res.status(404).json({ error: "Agent not found" });
+        }
+
+        // Setup multer for file uploads
+        const storage = multer.diskStorage({
+            destination: function (req, file, cb) {
+                const knowledgePath = path.join(
+                    process.cwd(),
+                    "..",
+                    "characters",
+                    "knowledge",
+                    agent.character.name
+                );
+                fs.promises.mkdir(knowledgePath, { recursive: true })
+                    .then(() => cb(null, knowledgePath))
+                    .catch(err => cb(err, null));
+            },
+            filename: function (req, file, cb) {
+                cb(null, file.originalname);
+            }
+        });
+
+        const upload = multer({ storage: storage }).array('files');
+
+        upload(req, res, function (err) {
+            if (err) {
+                elizaLogger.error(`Error uploading knowledge: ${err.message}`);
+                return res.status(500).json({ error: err.message });
+            }
+
+            const files = Array.isArray(req.files) ? req.files.map(file => ({
+                originalname: file.originalname,
+                filename: file.filename,
+                path: file.path,
+                size: file.size
+            })) : [];
+
+            elizaLogger.info(`Knowledge files uploaded for ${agent.character.name}: ${files.length} files`);
+            res.json({ success: true, files });
         });
     });
 
@@ -426,7 +455,7 @@ export function createApiRouter(
     router.post("/agents/:agentId/stop", async (req, res) => {
         const agentId = req.params.agentId;
         console.log("agentId", agentId);
-        const agent: AgentRuntime = agents.get(agentId);
+        const agent = agents.get(agentId) as unknown as AgentRuntime;
 
         // update character
         if (agent) {
