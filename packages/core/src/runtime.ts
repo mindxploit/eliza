@@ -1,6 +1,7 @@
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
+import { generateText as aiGenerateText } from "ai";
 import { v4 as uuidv4 } from "uuid";
 import {
     composeActionExamples,
@@ -14,9 +15,9 @@ import {
     formatEvaluatorNames,
     formatEvaluators,
 } from "./evaluators.ts";
-import { generateText } from "./generation.ts";
+import { generateText } from "./generation.ts"
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { elizaLogger } from "./index.ts";
+import { elizaLogger, generateTextFromFile } from "./index.ts";
 import knowledge from "./knowledge.ts";
 import { MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
@@ -56,7 +57,8 @@ import {
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { glob } from "glob";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
+import { createOpenAI } from "@ai-sdk/openai";
 /**
  * Represents the runtime environment for an agent, handling message processing,
  * action registration, and interaction with external services like OpenAI and Supabase.
@@ -672,7 +674,7 @@ export class AgentRuntime implements IAgentRuntime {
                 // Check if it's a file or direct knowledge
                 if (
                     fileExtension &&
-                    ["md", "txt", "pdf"].includes(fileExtension)
+                    ["md", "txt", "pdf", "csv", "xls"].includes(fileExtension)
                 ) {
                     try {
                         const filePath = join(this.knowledgeRoot, contentItem);
@@ -716,11 +718,24 @@ export class AgentRuntime implements IAgentRuntime {
                             })),
                         });
 
-                        // Read file content
-                        const content: string = await readFile(
-                            filePath,
-                            "utf8",
-                        );
+                        let content;
+                        if (fileExtension === "pdf" || fileExtension === "csv") {
+                            // Converting PDF file to text using Vertex AI (csv support to be added)
+                            try {
+                                content = await generateTextFromFile(this, filePath);
+                            } catch (error) {
+                                elizaLogger.error(
+                                    `Failed to convert PDF to text: ${error}`,
+                                );
+                                hasError = true;
+                            }
+                        } else {
+                            elizaLogger.info("Reading file:", filePath);
+                            content = await readFile(
+                                filePath,
+                                "utf8",
+                            );
+                        }
                         if (!content) {
                             hasError = true;
                             continue;

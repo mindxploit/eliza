@@ -2,7 +2,8 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createMistral } from "@ai-sdk/mistral";
 import { createGroq } from "@ai-sdk/groq";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAI, openai } from "@ai-sdk/openai";
+import { createVertex } from "@ai-sdk/google-vertex";
 import { bedrock } from "@ai-sdk/amazon-bedrock";
 import {
     generateObject as aiGenerateObject,
@@ -113,32 +114,6 @@ export async function trimTokens(
     elizaLogger.warn(`Unsupported tokenizer type: ${tokenizerType}`);
     return truncateTiktoken("gpt-4o", context, maxTokens);
 }
-
-// async function truncateAuto(
-//     modelPath: string,
-//     context: string,
-//     maxTokens: number
-// ) {
-//     try {
-//         const tokenizer = await AutoTokenizer.from_pretrained(modelPath);
-//         const tokens = tokenizer.encode(context);
-
-//         // If already within limits, return unchanged
-//         if (tokens.length <= maxTokens) {
-//             return context;
-//         }
-
-//         // Keep the most recent tokens by slicing from the end
-//         const truncatedTokens = tokens.slice(-maxTokens);
-
-//         // Decode back to text - js-tiktoken decode() returns a string directly
-//         return tokenizer.decode(truncatedTokens);
-//     } catch (error) {
-//         elizaLogger.error("Error in trimTokens:", error);
-//         // Return truncated string if tokenization fails
-//         return context.slice(-maxTokens * 4); // Rough estimate of 4 chars per token
-//     }
-// }
 
 async function truncateTiktoken(
     model: TiktokenModel,
@@ -377,33 +352,6 @@ export async function generateText({
         // verifiableInference,
     });
     elizaLogger.log("Using provider:", runtime.modelProvider);
-    // If verifiable inference is requested and adapter is provided, use it
-    // if (verifiableInference && runtime.verifiableInferenceAdapter) {
-    //     elizaLogger.log(
-    //         "Using verifiable inference adapter:",
-    //         runtime.verifiableInferenceAdapter
-    //     );
-    //     try {
-    //         const result: VerifiableInferenceResult =
-    //             await runtime.verifiableInferenceAdapter.generateText(
-    //                 context,
-    //                 modelClass,
-    //                 verifiableInferenceOptions
-    //             );
-    //         elizaLogger.log("Verifiable inference result:", result);
-    //         // Verify the proof
-    //         const isValid =
-    //             await runtime.verifiableInferenceAdapter.verifyProof(result);
-    //         if (!isValid) {
-    //             throw new Error("Failed to verify inference proof");
-    //         }
-
-    //         return result.text;
-    //     } catch (error) {
-    //         elizaLogger.error("Error in verifiable inference:", error);
-    //         throw error;
-    //     }
-    // }
 
     const provider = runtime.modelProvider;
     elizaLogger.debug("Provider settings:", {
@@ -1448,6 +1396,7 @@ export function splitText(content: string, chunkSize: number, bleed: number): st
 
     while (start < content.length) {
         const end = Math.min(start + chunkSize, content.length);
+        elizaLogger.info(content, 'splittingtext')
         chunks.push(content.substring(start, end));
         start = end - bleed; // Apply overlap
         elizaLogger.debug(`[splitText] Starting text split`, {
@@ -2758,4 +2707,32 @@ export async function generateTweetActions({
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
         retryDelay *= 2;
     }
+}
+
+export const generateTextFromFile = async (runtime: IAgentRuntime, filePath: string) => {
+    const vertex = createVertex({
+        project: "proud-woods-447109-c2", // Use env var or project from service account
+        location: "us-central1" // Use env var or fallback
+    });
+    const { text } = await aiGenerateText({
+        model: vertex("gemini-2.5-pro-preview-03-25"),
+        messages: [
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'file',
+                        data: fs.readFileSync(filePath),
+                        mimeType: 'application/pdf',
+                    },
+                    {
+                        type: 'text',
+                        text: 'Extract the essential text and information from the uploaded file. Return the result in markdown formatting but plain text so no triple backticks. Include the page number and revelant metadata in the end of the text.',
+                    },
+                ],
+            },
+        ],
+    });
+    elizaLogger.info("Processed pdf", text);
+    return text;
 }
