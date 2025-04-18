@@ -50,6 +50,7 @@ const logFetch = async (url: string, options: any) => {
 export function parseArguments(): {
     character?: string;
     characters?: string;
+    all?: boolean;
 } {
     try {
         return yargs(process.argv.slice(3))
@@ -61,6 +62,10 @@ export function parseArguments(): {
                 type: "string",
                 description:
                     "Comma separated list of paths to character JSON files",
+            })
+            .option("all", {
+                type: "boolean",
+                description: "Load all characters from the characters directory",
             })
             .parseSync();
     } catch (error) {
@@ -376,7 +381,7 @@ async function handlePluginImporting(plugins: string[]) {
         const importedPlugins = await Promise.all(
             plugins.map(async (plugin) => {
                 try {
-                    const importedPlugin:Plugin = await import(plugin);
+                    const importedPlugin: Plugin = await import(plugin);
                     const functionName =
                         plugin
                             .replace("@elizaos/plugin-", "")
@@ -384,11 +389,13 @@ async function handlePluginImporting(plugins: string[]) {
                             .replace(/-./g, (x) => x[1].toUpperCase()) +
                         "Plugin"; // Assumes plugin function is camelCased with Plugin suffix
                     if (!importedPlugin[functionName] && !importedPlugin.default) {
-                      elizaLogger.warn(plugin, 'does not have an default export or', functionName)
+                        elizaLogger.warn(plugin, 'does not have an default export or', functionName)
                     }
-                    return {...(
-                        importedPlugin.default || importedPlugin[functionName]
-                    ), npmName: plugin };
+                    return {
+                        ...(
+                            importedPlugin.default || importedPlugin[functionName]
+                        ), npmName: plugin
+                    };
                 } catch (importError) {
                     console.error(
                         `Failed to import plugin: ${plugin}`,
@@ -709,23 +716,23 @@ function initializeCache(
 }
 
 async function findDatabaseAdapter(runtime: AgentRuntime) {
-  const { adapters } = runtime;
-  let adapter: Adapter | undefined;
-  // if not found, default to sqlite
-  if (adapters.length === 0) {
-    const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
-    const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
-    adapter = sqliteAdapterPluginDefault.adapters[0];
-    if (!adapter) {
-      throw new Error("Internal error: No database adapter found for default adapter-sqlite");
+    const { adapters } = runtime;
+    let adapter: Adapter | undefined;
+    // if not found, default to sqlite
+    if (adapters.length === 0) {
+        const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
+        const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
+        adapter = sqliteAdapterPluginDefault.adapters[0];
+        if (!adapter) {
+            throw new Error("Internal error: No database adapter found for default adapter-sqlite");
+        }
+    } else if (adapters.length === 1) {
+        adapter = adapters[0];
+    } else {
+        throw new Error("Multiple database adapters found. You must have no more than one. Adjust your plugins configuration.");
     }
-  } else if (adapters.length === 1) {
-    adapter = adapters[0];
-  } else {
-    throw new Error("Multiple database adapters found. You must have no more than one. Adjust your plugins configuration.");
-    }
-  const adapterInterface = adapter?.init(runtime);
-  return adapterInterface;
+    const adapterInterface = adapter?.init(runtime);
+    return adapterInterface;
 }
 
 async function startAgent(
@@ -833,9 +840,18 @@ const startAgents = async () => {
     let serverPort = Number.parseInt(settings.SERVER_PORT || "3000");
     const args = parseArguments();
     const charactersArg = args.characters || args.character;
+
     let characters = [defaultCharacter];
 
-    if ((charactersArg) || hasValidRemoteUrls()) {
+    // load characters from the characters directory if the all flag is set
+    if (args.all) {
+        const characterFiles = fs.readdirSync(path.join(__dirname, "..", "..", 'characters')).filter(file => file.endsWith('.json'));
+        characters = await Promise.all(characterFiles.map(async (file) => {
+            const filePath = path.join(__dirname, "..", "..", 'characters', file);
+            const characterData = await fs.promises.readFile(filePath, 'utf8');
+            return JSON.parse(characterData);
+        }));
+    } else if ((charactersArg) || hasValidRemoteUrls()) {
         characters = await loadCharacters(charactersArg);
     }
 
