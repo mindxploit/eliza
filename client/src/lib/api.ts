@@ -22,9 +22,10 @@ const fetcher = async ({
         headers: headers
             ? headers
             : {
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-              },
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "x-api-key": "66c0878d-7195-4469-9de2-8c105a1a01e6",
+            },
     };
 
     if (method === "POST") {

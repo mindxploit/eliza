@@ -7,6 +7,7 @@ export const messageCompletionFooter = `\nResponse format should be formatted in
 \`\`\`
 
 The “action” field should be one of the options in [Available Actions] and the "text" field should be the response you want to send.
+The "text" field should never include the name of the actions.
 `;
 
 export const shouldRespondFooter = `The available options are [RESPOND], [IGNORE], or [STOP]. Choose the most appropriate option.
@@ -15,7 +16,7 @@ If {{agentName}} is talking too much, you can choose [IGNORE]
 Your response must include one of the options.`;
 
 export const parseShouldRespondFromText = (
-    text: string
+    text: string,
 ): "RESPOND" | "IGNORE" | "STOP" | null => {
     const match = text
         .split("\n")[0]
@@ -27,12 +28,12 @@ export const parseShouldRespondFromText = (
     return match
         ? (match[0].toUpperCase() as "RESPOND" | "IGNORE" | "STOP")
         : text.includes("RESPOND")
-        ? "RESPOND"
-        : text.includes("IGNORE")
-        ? "IGNORE"
-        : text.includes("STOP")
-        ? "STOP"
-        : null;
+          ? "RESPOND"
+          : text.includes("IGNORE")
+            ? "IGNORE"
+            : text.includes("STOP")
+              ? "STOP"
+              : null;
 };
 
 export const booleanFooter = `Respond with only a YES or a NO.`;
@@ -93,7 +94,7 @@ export function parseJsonArrayFromText(text: string) {
             // Only replace quotes that are actually being used for string delimitation
             const normalizedJson = jsonBlockMatch[1].replace(
                 /(?<!\\)'([^']*)'(?=\s*[,}\]])/g,
-                '"$1"'
+                '"$1"',
             );
             jsonData = JSON.parse(normalizedJson);
         } catch (e) {
@@ -112,7 +113,7 @@ export function parseJsonArrayFromText(text: string) {
                 // Only replace quotes that are actually being used for string delimitation
                 const normalizedJson = arrayMatch[0].replace(
                     /(?<!\\)'([^']*)'(?=\s*[,}\]])/g,
-                    '"$1"'
+                    '"$1"',
                 );
                 jsonData = JSON.parse(normalizedJson);
             } catch (e) {
@@ -140,7 +141,7 @@ export function parseJsonArrayFromText(text: string) {
  * @returns An object parsed from the JSON string if successful; otherwise, null or the result of parsing an array.
  */
 export function parseJSONObjectFromText(
-    text: string
+    text: string,
 ): Record<string, any> | null {
     let jsonData = null;
     const jsonBlockMatch = text.match(jsonBlockPattern);
@@ -193,7 +194,7 @@ export function parseJSONObjectFromText(
  */
 export function extractAttributes(
     response: string,
-    attributesToExtract?: string[]
+    attributesToExtract?: string[],
 ): { [key: string]: string | undefined } {
     response = response.trim();
     const attributes: { [key: string]: string | undefined } = {};
@@ -208,7 +209,7 @@ export function extractAttributes(
         // Extract only specified attributes
         attributesToExtract.forEach((attribute) => {
             const match = response.match(
-                new RegExp(`"${attribute}"\\s*:\\s*"([^"]*)"?`, "i")
+                new RegExp(`"${attribute}"\\s*:\\s*"([^"]*)"?`, "i"),
             );
             if (match) {
                 attributes[attribute] = match[1];
@@ -236,18 +237,18 @@ export function extractAttributes(
 
 export const normalizeJsonString = (str: string) => {
     // Remove extra spaces after '{' and before '}'
-    str = str.replace(/\{\s+/, '{').replace(/\s+\}/, '}').trim();
+    str = str.replace(/\{\s+/, "{").replace(/\s+\}/, "}").trim();
 
     // "key": unquotedValue → "key": "unquotedValue"
     str = str.replace(
-      /("[\w\d_-]+")\s*: \s*(?!"|\[)([\s\S]+?)(?=(,\s*"|\}$))/g,
-      '$1: "$2"',
+        /("[\w\d_-]+")\s*: \s*(?!"|\[)([\s\S]+?)(?=(,\s*"|\}$))/g,
+        '$1: "$2"',
     );
 
     // "key": 'value' → "key": "value"
     str = str.replace(
-      /"([^"]+)"\s*:\s*'([^']*)'/g,
-      (_, key, value) => `"${key}": "${value}"`,
+        /"([^"]+)"\s*:\s*'([^']*)'/g,
+        (_, key, value) => `"${key}": "${value}"`,
     );
 
     // "key": someWord → "key": "someWord"
@@ -277,7 +278,7 @@ export function cleanJsonResponse(response: string): string {
 export const postActionResponseFooter = `Choose any combination of [LIKE], [RETWEET], [QUOTE], and [REPLY] that are appropriate. Each action must be on its own line. Your response must only include the chosen actions.`;
 
 export const parseActionResponseFromText = (
-    text: string
+    text: string,
 ): { actions: ActionResponse } => {
     const actions: ActionResponse = {
         like: false,
@@ -316,7 +317,7 @@ export const parseActionResponseFromText = (
  */
 export function truncateToCompleteSentence(
     text: string,
-    maxLength: number
+    maxLength: number,
 ): string {
     if (text.length <= maxLength) {
         return text;
