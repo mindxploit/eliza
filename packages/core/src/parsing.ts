@@ -6,8 +6,8 @@ export const messageCompletionFooter = `\nResponse format should be formatted in
 { "user": "{{agentName}}", "text": "<string>", "action": "<string>" }
 \`\`\`
 
+The "text" field should never ever include the name of the actions in it. [Available Actions] or any other action, even (NONE), since this is the text that will be sent to the user.
 The “action” field should be one of the options in [Available Actions] and the "text" field should be the response you want to send.
-The "text" field should never include the name of the actions.
 `;
 
 export const shouldRespondFooter = `The available options are [RESPOND], [IGNORE], or [STOP]. Choose the most appropriate option.
@@ -28,12 +28,12 @@ export const parseShouldRespondFromText = (
     return match
         ? (match[0].toUpperCase() as "RESPOND" | "IGNORE" | "STOP")
         : text.includes("RESPOND")
-          ? "RESPOND"
-          : text.includes("IGNORE")
-            ? "IGNORE"
-            : text.includes("STOP")
-              ? "STOP"
-              : null;
+            ? "RESPOND"
+            : text.includes("IGNORE")
+                ? "IGNORE"
+                : text.includes("STOP")
+                    ? "STOP"
+                    : null;
 };
 
 export const booleanFooter = `Respond with only a YES or a NO.`;
