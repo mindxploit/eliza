@@ -847,10 +847,16 @@ const startAgents = async () => {
     if (args.all) {
         const characterFiles = fs.readdirSync(path.join(__dirname, "..", "..", 'characters')).filter(file => file.endsWith('.json'));
         characters = await Promise.all(characterFiles.map(async (file) => {
-            const filePath = path.join(__dirname, "..", "..", 'characters', file);
-            const characterData = await fs.promises.readFile(filePath, 'utf8');
-            return JSON.parse(characterData);
+            try {
+                const filePath = path.join(__dirname, "..", "..", 'characters', file);
+                const characterData = await fs.promises.readFile(filePath, 'utf8');
+                return JSON.parse(characterData);
+            } catch (error) {
+                elizaLogger.error(`Error loading character ${file}:`, error);
+                return null;
+            }
         }));
+        characters = characters.filter(Boolean);
     } else if ((charactersArg) || hasValidRemoteUrls()) {
         characters = await loadCharacters(charactersArg);
     }
