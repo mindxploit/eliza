@@ -425,30 +425,40 @@ export function createApiRouter(
             }
 
             try {
-                // Save the original character data and ID
-                const character = agent.character;
+                // Create a deep clone of the character
+                const character = JSON.parse(JSON.stringify(agent.character));
                 const originalId = agent.agentId;
+
+                // Explicitly ensure settings and ragKnowledge are set
+                if (!character.settings) {
+                    character.settings = {};
+                }
+                character.settings.ragKnowledge = true;
 
                 // Ensure the ID is preserved
                 character.id = originalId;
 
-                elizaLogger.info(`Restarting agent ${agent.character.name} to process new knowledge files`);
+                elizaLogger.info(`Restarting agent ${character.name} to process new knowledge files`, {
+                    ragKnowledgeEnabled: character.settings.ragKnowledge
+                });
 
                 // Stop the agent
                 agent.stop();
                 directClient.unregisterAgent(agent);
 
-                // Start the agent with the same character
-                // This will trigger the knowledge processing as part of initialization
+                // Start the agent with the modified character
                 const newAgent = await directClient.startAgent(character);
 
-                elizaLogger.log(`${character.name} restarted with new knowledge`);
+                elizaLogger.log(`${character.name} restarted with new knowledge`, {
+                    ragKnowledgeEnabled: newAgent.character.settings.ragKnowledge
+                });
 
                 res.json({
                     success: true,
                     files,
                     message: "Agent restarted to process new knowledge",
-                    agentId: newAgent.agentId
+                    agentId: newAgent.agentId,
+                    ragKnowledgeEnabled: newAgent.character.settings.ragKnowledge
                 });
             } catch (error) {
                 elizaLogger.error(`Error restarting agent to process knowledge:`, error);
