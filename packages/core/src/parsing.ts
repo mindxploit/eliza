@@ -6,7 +6,7 @@ export const messageCompletionFooter = `\nResponse format should be formatted in
 { "user": "{{agentName}}", "text": "<string>", "action": "<string>" }
 \`\`\`
 
-The "text" field should never ever include the name of the actions in it. [Available Actions] or any other action, even (NONE), since this is the text that will be sent to the user.
+The "text" field should never ever include the name of the actions in it. [Available Actions] or any other action, even "(NONE)", since this is the text that will be sent to the user.
 The “action” field should be one of the options in [Available Actions] and the "text" field should be the response you want to send.
 `;
 
