@@ -404,7 +404,7 @@ export function createApiRouter(
         const upload = multer({ storage }).array('files');
 
         // Use the middleware
-        upload(req, res, function (err) {
+        upload(req, res, async function (err) {
             if (err) {
                 elizaLogger.error(`Error uploading knowledge: ${err.message}`);
                 return res.status(500).json({ error: err.message });
@@ -419,7 +419,44 @@ export function createApiRouter(
             })) : [];
 
             elizaLogger.info(`Knowledge files uploaded for ${agent.character.name}: ${files.length} files`);
-            res.json({ success: true, files });
+
+            if (files.length === 0) {
+                return res.json({ success: true, files, message: "No files uploaded" });
+            }
+
+            try {
+                // Save the original character data and ID
+                const character = agent.character;
+                const originalId = agent.agentId;
+
+                // Ensure the ID is preserved
+                character.id = originalId;
+
+                elizaLogger.info(`Restarting agent ${agent.character.name} to process new knowledge files`);
+
+                // Stop the agent
+                agent.stop();
+                directClient.unregisterAgent(agent);
+
+                // Start the agent with the same character
+                // This will trigger the knowledge processing as part of initialization
+                const newAgent = await directClient.startAgent(character);
+
+                elizaLogger.log(`${character.name} restarted with new knowledge`);
+
+                res.json({
+                    success: true,
+                    files,
+                    message: "Agent restarted to process new knowledge",
+                    agentId: newAgent.agentId
+                });
+            } catch (error) {
+                elizaLogger.error(`Error restarting agent to process knowledge:`, error);
+                res.status(500).json({
+                    success: false,
+                    message: error.message
+                });
+            }
         });
     });
 
