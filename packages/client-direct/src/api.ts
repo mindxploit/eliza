@@ -367,6 +367,71 @@ export function createApiRouter(
         });
     });
 
+    router.put("/agents/modify", async (req, res) => {
+        elizaLogger.info("req.body", req.body);
+        const character = validateCharacterConfig(req.body.characterConfig);
+        const agentId = req.body.agentId;
+        let agent: AgentRuntime;
+        if (agentId) {
+            agent = agents.get(agentId) as unknown as AgentRuntime;
+            agent.stop();
+            directClient.unregisterAgent(agent); // da capire cosa fa
+        }
+        else {
+            res.status(400).json({
+                success: false,
+                message: "Agent ID is required",
+            });
+            return;
+        }
+        const characterJson = { ...req.body.characterConfig, id: agentId };
+
+        // start it up (and register it)
+        // if it has a different name or no specific id property, the id will change
+        try {
+            agent = await directClient.startAgent(character);
+            elizaLogger.log(`${character.name} started`);
+        } catch (e) {
+            elizaLogger.error(`Error starting agent: ${e}`);
+            res.status(500).json({
+                success: false,
+                message: e.message,
+            });
+            return;
+        }
+        // store updated character
+        try {
+            // character
+            const characterFilename = `${character.name}.json`;
+            const characterDir = path.join(process.cwd(), "..", "characters");
+            const characterFilepath = path.join(
+                characterDir,
+                characterFilename,
+            );
+            await fs.promises.mkdir(characterDir, { recursive: true });
+            await fs.promises.writeFile(
+                characterFilepath,
+                JSON.stringify(
+                    { ...characterJson, id: agent.agentId },
+                    null,
+                    2,
+                ),
+            );
+            elizaLogger.info(
+                `Character updated successfully at ${characterFilepath}`,
+            );
+        } catch (error) {
+            elizaLogger.error(
+                `Failed to update character: ${error.message}`,
+            );
+        }
+        res.json({
+            id: character.id,
+            character: character,
+        });
+    });
+
+
 
     // Dedicated endpoint for knowledge uploads using formdata
     router.post("/agents/:agentId/knowledge", async (req, res) => {
