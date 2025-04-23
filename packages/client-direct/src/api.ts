@@ -559,6 +559,21 @@ export function createApiRouter(
                 // Start the agent with the modified character
                 const newAgent = await directClient.startAgent(character);
 
+                // Only process parent and return metadata
+                const uploadedKnowledge = await newAgent.ragKnowledgeManager.listAllKnowledge(originalId);
+                const parentDocuments = uploadedKnowledge.filter(
+                    (item) =>
+                        !item.id.includes("chunk") && item.content.metadata?.source // Must have a source path
+                );
+                const knowledgeMetadata = parentDocuments.map(item => ({
+                    id: item.originalId,
+                    source: item.content.metadata?.source,
+                    type: item.content.metadata?.type,
+                }));
+
+                elizaLogger.info(`Knowledge for ${character.name}:`, parentDocuments);
+                elizaLogger.info(`Metadata knowledge for ${character.name}:`, knowledgeMetadata);
+
                 elizaLogger.log(`${character.name} restarted with new knowledge`, {
                     ragKnowledgeEnabled: newAgent.character.settings.ragKnowledge
                 });
@@ -568,7 +583,8 @@ export function createApiRouter(
                     files,
                     message: "Agent restarted to process new knowledge",
                     agentId: newAgent.agentId,
-                    ragKnowledgeEnabled: newAgent.character.settings.ragKnowledge
+                    ragKnowledgeEnabled: newAgent.character.settings.ragKnowledge,
+                    knowledgeMetadata: knowledgeMetadata
                 });
             } catch (error) {
                 elizaLogger.error(`Error restarting agent to process knowledge:`, error);
