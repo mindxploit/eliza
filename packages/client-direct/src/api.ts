@@ -566,7 +566,7 @@ export function createApiRouter(
                         !item.id.includes("chunk") && item.content.metadata?.source // Must have a source path
                 );
                 const knowledgeMetadata = parentDocuments.map(item => ({
-                    id: item.originalId,
+                    id: item.id,
                     source: item.content.metadata?.source,
                     type: item.content.metadata?.type,
                 }));
