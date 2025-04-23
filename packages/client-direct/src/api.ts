@@ -133,11 +133,18 @@ export function createApiRouter(
             // Character name is needed for file deletion
             const characterName = agent.character.name;
 
-            // Stop and unregister agent
-            agent.stop();
-            directClient.unregisterAgent(agent);
-
             try {
+                // First clear knowledge database embeddings
+                if (agent.ragKnowledgeManager) {
+                    elizaLogger.info(`Clearing knowledge database for agent: ${agentId}`);
+                    await agent.ragKnowledgeManager.clearKnowledge();
+                    elizaLogger.info(`Knowledge database cleared for agent: ${agentId}`);
+                }
+
+                // Stop and unregister agent
+                agent.stop();
+                directClient.unregisterAgent(agent);
+
                 // Delete character JSON file
                 const characterFilepath = path.join(
                     process.cwd(),
@@ -168,8 +175,8 @@ export function createApiRouter(
 
                 res.status(204).json({ success: true });
             } catch (error) {
-                elizaLogger.error(`Error deleting character files: ${error.message}`);
-                // Still return success since the agent was removed from memory
+                elizaLogger.error(`Error during agent deletion: ${error.message}`);
+                // Still return success since we tried our best
                 res.status(204).json({ success: true });
             }
         } else {
@@ -260,7 +267,6 @@ export function createApiRouter(
         const roomId = req.params.roomId
             ? stringToUuid(req.params.roomId)
             : stringToUuid("default-room-" + req.params.agentId);
-        elizaLogger.info(req.params, "req.params");
 
         const { agentId } = validateUUIDParams(req.params, res) ?? {
             agentId: null,
@@ -609,7 +615,6 @@ export function createApiRouter(
 
     router.post("/agents/:agentId/stop", async (req, res) => {
         const agentId = req.params.agentId;
-        console.log("agentId", agentId);
         const agent = agents.get(agentId) as unknown as AgentRuntime;
 
         // update character
