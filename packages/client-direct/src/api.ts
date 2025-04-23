@@ -130,9 +130,48 @@ export function createApiRouter(
         const agent = agents.get(agentId) as unknown as AgentRuntime;
 
         if (agent) {
+            // Character name is needed for file deletion
+            const characterName = agent.character.name;
+
+            // Stop and unregister agent
             agent.stop();
             directClient.unregisterAgent(agent);
-            res.status(204).json({ success: true });
+
+            try {
+                // Delete character JSON file
+                const characterFilepath = path.join(
+                    process.cwd(),
+                    "..",
+                    "characters",
+                    `${characterName}.json`
+                );
+
+                if (fs.existsSync(characterFilepath)) {
+                    await fs.promises.unlink(characterFilepath);
+                    elizaLogger.info(`Character file deleted: ${characterFilepath}`);
+                }
+
+                // Delete knowledge directory for this character
+                const knowledgePath = path.join(
+                    process.cwd(),
+                    "..",
+                    "characters",
+                    "knowledge",
+                    characterName
+                );
+
+                if (fs.existsSync(knowledgePath)) {
+                    // Recursively delete directory and contents
+                    await fs.promises.rm(knowledgePath, { recursive: true });
+                    elizaLogger.info(`Knowledge directory deleted: ${knowledgePath}`);
+                }
+
+                res.status(204).json({ success: true });
+            } catch (error) {
+                elizaLogger.error(`Error deleting character files: ${error.message}`);
+                // Still return success since the agent was removed from memory
+                res.status(204).json({ success: true });
+            }
         } else {
             res.status(404).json({ error: "Agent not found" });
         }
