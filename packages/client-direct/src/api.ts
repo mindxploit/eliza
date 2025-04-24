@@ -596,6 +596,72 @@ export function createApiRouter(
         });
     });
 
+    // Delete knowledge files endpoint
+    router.delete("/agents/:agentId/knowledge", async (req, res) => {
+        const { agentId } = validateUUIDParams(req.params, res) ?? {
+            agentId: null,
+        };
+        if (!agentId) return;
+
+        const agent = agents.get(agentId) as unknown as AgentRuntime;
+        if (!agent) {
+            return res.status(404).json({ error: "Agent not found" });
+        }
+
+        const { filePaths } = req.body;
+        if (!Array.isArray(filePaths) || filePaths.length === 0) {
+            return res.status(400).json({ error: "Files array is required and cannot be empty" });
+        }
+
+        try {
+            const knowledgePath = path.join(
+                process.cwd(),
+                "..",
+                "characters",
+                "knowledge",
+                agent.character.name
+            );
+
+            // Track deletion results
+            const results = {
+                deleted: [],
+                failed: []
+            };
+
+            // Delete each file
+            for (const filepath of filePaths) {
+                const fullPath = path.join(knowledgePath, path.basename(filepath));
+
+                try {
+                    await fs.promises.unlink(fullPath);
+                    results.deleted.push(filepath);
+                    elizaLogger.info(`Deleted knowledge file: ${fullPath}`);
+                } catch (error) {
+                    results.failed.push({ filepath, error: error.message });
+                    elizaLogger.error(`Failed to delete knowledge file ${fullPath}: ${error.message}`);
+                }
+            }
+
+            // Run cleanup to update the knowledge database
+            if (agent.ragKnowledgeManager && results.deleted.length > 0) {
+                await agent.ragKnowledgeManager.cleanupDeletedKnowledgeFiles();
+                elizaLogger.info(`Cleaned up deleted knowledge files for agent: ${agentId}`);
+            }
+
+            res.json({
+                success: true,
+                results,
+                message: `Deleted ${results.deleted.length} files, failed to delete ${results.failed.length} files`
+            });
+        } catch (error) {
+            elizaLogger.error(`Error deleting knowledge files: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
+
     router.post("/agent/start", async (req, res) => {
         const { characterPath, characterJson } = req.body;
         console.log("characterPath:", characterPath);
