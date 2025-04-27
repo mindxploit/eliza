@@ -361,7 +361,7 @@ export const models: Models = {
         },
     },
     [ModelProviderName.GOOGLE]: {
-        endpoint: "https://generativelanguage.googleapis.com",
+        endpoint: "https://generativelanguage.googleapis.com/v1beta",
         model: {
             [ModelClass.SMALL]: {
                 name:
@@ -371,8 +371,6 @@ export const models: Models = {
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                frequency_penalty: 0.4,
-                presence_penalty: 0.4,
                 temperature: 0.7,
             },
             [ModelClass.MEDIUM]: {
@@ -383,20 +381,16 @@ export const models: Models = {
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                frequency_penalty: 0.4,
-                presence_penalty: 0.4,
                 temperature: 0.7,
             },
             [ModelClass.LARGE]: {
                 name:
                     settings.LARGE_GOOGLE_MODEL ||
                     settings.GOOGLE_MODEL ||
-                    "gemini-2.0-flash-exp",
+                    "gemini-2.0-flash-thinking-exp",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                frequency_penalty: 0.4,
-                presence_penalty: 0.4,
                 temperature: 0.7,
             },
             [ModelClass.EMBEDDING]: {

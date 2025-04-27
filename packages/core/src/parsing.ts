@@ -147,13 +147,22 @@ export function parseJSONObjectFromText(
 
     if (jsonBlockMatch) {
         text = cleanJsonResponse(text);
-        const parsingText = normalizeJsonString(text);
         try {
-            jsonData = JSON.parse(parsingText);
+            // Try parsing the JSON directly first
+            jsonData = JSON.parse(text);
         } catch (e) {
             console.error("Error parsing JSON:", e);
-            console.error("Text is not JSON", text);
-            return extractAttributes(text);
+
+            try {
+                // If direct parsing fails, try normalizing the JSON first
+                const parsingText = normalizeJsonString(text);
+                jsonData = JSON.parse(parsingText);
+            } catch (e2) {
+                console.error("Error parsing normalized JSON:", e2);
+                console.error("Text is not JSON", text);
+                // If both parsing attempts fail, try to extract attributes
+                return extractAttributes(text);
+            }
         }
     } else {
         const objectPattern = /{[\s\S]*?}?/;
@@ -161,13 +170,22 @@ export function parseJSONObjectFromText(
 
         if (objectMatch) {
             text = cleanJsonResponse(text);
-            const parsingText = normalizeJsonString(text);
             try {
-                jsonData = JSON.parse(parsingText);
+                // Try parsing the JSON directly first
+                jsonData = JSON.parse(text);
             } catch (e) {
                 console.error("Error parsing JSON:", e);
-                console.error("Text is not JSON", text);
-                return extractAttributes(text);
+
+                try {
+                    // If direct parsing fails, try normalizing the JSON first
+                    const parsingText = normalizeJsonString(text);
+                    jsonData = JSON.parse(parsingText);
+                } catch (e2) {
+                    console.error("Error parsing normalized JSON:", e2);
+                    console.error("Text is not JSON", text);
+                    // If both parsing attempts fail, try to extract attributes
+                    return extractAttributes(text);
+                }
             }
         }
     }
@@ -181,7 +199,8 @@ export function parseJSONObjectFromText(
     } else if (typeof jsonData === "object" && Array.isArray(jsonData)) {
         return parseJsonArrayFromText(text);
     } else {
-        return null;
+        // If no JSON object was found, try to extract attributes
+        return extractAttributes(text);
     }
 }
 
