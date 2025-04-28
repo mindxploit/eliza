@@ -567,7 +567,7 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
             timeMarker("Main document storage");
 
             // Step 4: Generate chunks
-            const chunks = await splitChunks(processedContent, 512, 20);
+            const chunks = await splitChunks(processedContent, 1500, 40);
             const totalChunks = chunks.length;
             elizaLogger.info(`Generated ${totalChunks} chunks`);
             timeMarker("Chunk generation");
