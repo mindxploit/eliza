@@ -2864,8 +2864,8 @@ export const generateTextFromFile = async (runtime: IAgentRuntime, filePath: str
                     {
                         type: 'text',
                         text: `Extract the text and information from the uploaded file.
-                        Return the result in markdown formatting but plain text so no triple backticks.
-                        Include relevant metadata and context at the end of each page of the text.`
+                        Return the result in well organized markdown formatting but as plain text, so no triple backticks.
+                        Include relevant metadata and context at the end of the text.`
                     },
                 ],
             },
