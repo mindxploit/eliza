@@ -129,7 +129,6 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
                 .replace(/```[\s\S]*?```/g, "")
                 .replace(/`.*?`/g, "")
                 .replace(/#{1,6}\s*(.*)/g, "$1")
-                .replace(/(https?:\/\/)?(www\.)?([^\s]+\.[^\s]+)/g, "$3")
                 .replace(/<@[!&]?\d+>/g, "")
                 .replace(/<[^>]*>/g, "")
                 .replace(/^\s*[-*_]{3,}\s*$/gm, "")
@@ -139,7 +138,6 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
                 .replace(/\n{3,}/g, "\n\n")
                 // .replace(/[^a-zA-Z0-9\s\-_./:?=&]/g, "") --this strips out CJK characters
                 .trim()
-                .toLowerCase()
         );
     }
 
