@@ -129,8 +129,6 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
                 .replace(/```[\s\S]*?```/g, "")
                 .replace(/`.*?`/g, "")
                 .replace(/#{1,6}\s*(.*)/g, "$1")
-                .replace(/!\[(.*?)\]\(.*?\)/g, "$1")
-                .replace(/\[(.*?)\]\(.*?\)/g, "$1")
                 .replace(/(https?:\/\/)?(www\.)?([^\s]+\.[^\s]+)/g, "$3")
                 .replace(/<@[!&]?\d+>/g, "")
                 .replace(/<[^>]*>/g, "")
@@ -149,19 +147,19 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
         if (!text || !terms.length) {
             return false;
         }
-    
+
         const words = text.toLowerCase().split(" ").filter(w => w.length > 0);
-        
+
         // Find all positions for each term (not just first occurrence)
-        const allPositions = terms.flatMap(term => 
+        const allPositions = terms.flatMap(term =>
             words.reduce((positions, word, idx) => {
                 if (word.includes(term)) positions.push(idx);
                 return positions;
             }, [] as number[])
         ).sort((a, b) => a - b);
-    
+
         if (allPositions.length < 2) return false;
-    
+
         // Check proximity
         for (let i = 0; i < allPositions.length - 1; i++) {
             if (Math.abs(allPositions[i] - allPositions[i + 1]) <= 5) {
@@ -173,7 +171,7 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
                 return true;
             }
         }
-    
+
         return false;
     }
 
@@ -479,10 +477,10 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
                             `[Cleanup] Error during deletion process for ${filePath}:`,
                             deleteError instanceof Error
                                 ? {
-                                      message: deleteError.message,
-                                      stack: deleteError.stack,
-                                      name: deleteError.name,
-                                  }
+                                    message: deleteError.message,
+                                    stack: deleteError.stack,
+                                    name: deleteError.name,
+                                }
                                 : deleteError
                         );
                     }
