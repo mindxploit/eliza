@@ -178,7 +178,7 @@ export const continueAction: Action = {
 
         // Use AI to determine if we should continue
         const shouldContinue = await _shouldContinue(state);
-        if (!shouldContinue) {
+        if (!shouldContinue || process.env.SHOULD_CONTINUE === "false") {
             elizaLogger.log("[CONTINUE] Not elaborating, returning");
             return;
         }
