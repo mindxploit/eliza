@@ -367,7 +367,7 @@ export const models: Models = {
                 name:
                     settings.SMALL_GOOGLE_MODEL ||
                     settings.GOOGLE_MODEL ||
-                    "gemini-2.0-flash-exp",
+                    "gemini-2.0-flash",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
@@ -379,7 +379,7 @@ export const models: Models = {
                 name:
                     settings.MEDIUM_GOOGLE_MODEL ||
                     settings.GOOGLE_MODEL ||
-                    "gemini-2.0-flash-exp",
+                    "gemini-2.0-flash",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
@@ -391,7 +391,7 @@ export const models: Models = {
                 name:
                     settings.LARGE_GOOGLE_MODEL ||
                     settings.GOOGLE_MODEL ||
-                    "gemini-2.0-flash-exp",
+                    "gemini-2.5-pro-exp-03-25",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
