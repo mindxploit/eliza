@@ -316,21 +316,21 @@ function getCloudflareGatewayBaseURL(
     });
 
     if (!isCloudflareEnabled) {
-        elizaLogger.debug("Cloudflare Gateway is not enabled");
+        // elizaLogger.debug("Cloudflare Gateway is not enabled");
         return undefined;
     }
 
     if (!cloudflareAccountId) {
-        elizaLogger.warn(
-            "Cloudflare Gateway is enabled but CLOUDFLARE_AI_ACCOUNT_ID is not set"
-        );
+        // elizaLogger.warn(
+        //     "Cloudflare Gateway is enabled but CLOUDFLARE_AI_ACCOUNT_ID is not set"
+        // );
         return undefined;
     }
 
     if (!cloudflareGatewayId) {
-        elizaLogger.warn(
-            "Cloudflare Gateway is enabled but CLOUDFLARE_AI_GATEWAY_ID is not set"
-        );
+        // elizaLogger.warn(
+        //     "Cloudflare Gateway is enabled but CLOUDFLARE_AI_GATEWAY_ID is not set"
+        // );
         return undefined;
     }
 

@@ -36,34 +36,34 @@ export const getEmbeddingConfig = (): EmbeddingConfig => ({
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? getEmbeddingModelSettings(ModelProviderName.OPENAI).dimensions
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).dimensions
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET)
-                      .dimensions
-                : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
-                  ? getEmbeddingModelSettings(ModelProviderName.HEURIST)
+                ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).dimensions
+                : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                    ? getEmbeddingModelSettings(ModelProviderName.GAIANET)
                         .dimensions
-                  : 384, // BGE
+                    : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
+                        ? getEmbeddingModelSettings(ModelProviderName.HEURIST)
+                            .dimensions
+                        : 384, // BGE
     model:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? getEmbeddingModelSettings(ModelProviderName.OPENAI).name
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).name
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET).name
-                : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
-                  ? getEmbeddingModelSettings(ModelProviderName.HEURIST).name
-                  : "BGE-small-en-v1.5",
+                ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).name
+                : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                    ? getEmbeddingModelSettings(ModelProviderName.GAIANET).name
+                    : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
+                        ? getEmbeddingModelSettings(ModelProviderName.HEURIST).name
+                        : "BGE-small-en-v1.5",
     provider:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? "OpenAI"
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? "Ollama"
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? "GaiaNet"
-                : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
-                  ? "Heurist"
-                  : "BGE",
+                ? "Ollama"
+                : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                    ? "GaiaNet"
+                    : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
+                        ? "Heurist"
+                        : "BGE",
 });
 
 async function getRemoteEmbedding(
@@ -84,8 +84,8 @@ async function getRemoteEmbedding(
             "Content-Type": "application/json",
             ...(options.apiKey
                 ? {
-                      Authorization: `Bearer ${options.apiKey}`,
-                  }
+                    Authorization: `Bearer ${options.apiKey}`,
+                }
                 : {}),
         },
         body: JSON.stringify({
@@ -182,12 +182,7 @@ export function getEmbeddingZeroVector(): number[] {
 export async function embed(runtime: IAgentRuntime, input: string) {
     elizaLogger.debug("Embedding request:", {
         modelProvider: runtime.character.modelProvider,
-        useOpenAI: process.env.USE_OPENAI_EMBEDDING,
         input: input?.slice(0, 50) + "...",
-        inputType: typeof input,
-        inputLength: input?.length,
-        isString: typeof input === "string",
-        isEmpty: !input,
     });
 
     // Validate input
@@ -274,7 +269,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     });
 
     async function getLocalEmbedding(input: string): Promise<number[]> {
-        elizaLogger.debug("DEBUG - Inside getLocalEmbedding function");
+        // elizaLogger.debug("DEBUG - Inside getLocalEmbedding function");
 
         try {
             const embeddingManager = LocalEmbeddingModelManager.getInstance();
