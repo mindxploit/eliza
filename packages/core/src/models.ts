@@ -361,7 +361,7 @@ export const models: Models = {
         },
     },
     [ModelProviderName.GOOGLE]: {
-        endpoint: "https://generativelanguage.googleapis.com",
+        endpoint: "https://generativelanguage.googleapis.com/v1beta",
         model: {
             [ModelClass.SMALL]: {
                 name:
