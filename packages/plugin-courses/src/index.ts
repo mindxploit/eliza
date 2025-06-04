@@ -2,14 +2,14 @@ import type { Plugin } from "@elizaos/core";
 import { educationalResponseAction } from "./actions/teachChapter.ts";
 import { courseProvider } from "./providers/courseProvider.ts";
 
-export const teachingCoursesPlugin: Plugin = {
-    name: "teaching-courses",
+export const coursesPlugin: Plugin = {
+    name: "courses",
     description: "Plugin for always-on educational responses with structured course content delivery through external APIs",
     actions: [educationalResponseAction],
     providers: [courseProvider],
 };
 
-export default teachingCoursesPlugin;
+export default coursesPlugin;
 
 // Export types for use by other modules
 export * from "./types.ts";
