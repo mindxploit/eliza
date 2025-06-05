@@ -2,7 +2,6 @@ import { getEmbeddingModelSettings, getEndpoint } from "./models.ts";
 import { type IAgentRuntime, ModelProviderName } from "./types.ts";
 import settings from "./settings.ts";
 import elizaLogger from "./logger.ts";
-import LocalEmbeddingModelManager from "./localembeddingManager.ts";
 
 interface EmbeddingOptions {
     model: string;
@@ -36,34 +35,34 @@ export const getEmbeddingConfig = (): EmbeddingConfig => ({
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? getEmbeddingModelSettings(ModelProviderName.OPENAI).dimensions
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).dimensions
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET)
-                      .dimensions
-                : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
-                  ? getEmbeddingModelSettings(ModelProviderName.HEURIST)
+                ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).dimensions
+                : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                    ? getEmbeddingModelSettings(ModelProviderName.GAIANET)
                         .dimensions
-                  : 384, // BGE
+                    : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
+                        ? getEmbeddingModelSettings(ModelProviderName.HEURIST)
+                            .dimensions
+                        : 384, // BGE
     model:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? getEmbeddingModelSettings(ModelProviderName.OPENAI).name
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).name
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET).name
-                : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
-                  ? getEmbeddingModelSettings(ModelProviderName.HEURIST).name
-                  : "BGE-small-en-v1.5",
+                ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).name
+                : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                    ? getEmbeddingModelSettings(ModelProviderName.GAIANET).name
+                    : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
+                        ? getEmbeddingModelSettings(ModelProviderName.HEURIST).name
+                        : "BGE-small-en-v1.5",
     provider:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? "OpenAI"
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? "Ollama"
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? "GaiaNet"
-                : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
-                  ? "Heurist"
-                  : "BGE",
+                ? "Ollama"
+                : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                    ? "GaiaNet"
+                    : settings.USE_HEURIST_EMBEDDING?.toLowerCase() === "true"
+                        ? "Heurist"
+                        : "BGE",
 });
 
 async function getRemoteEmbedding(
@@ -84,8 +83,8 @@ async function getRemoteEmbedding(
             "Content-Type": "application/json",
             ...(options.apiKey
                 ? {
-                      Authorization: `Bearer ${options.apiKey}`,
-                  }
+                    Authorization: `Bearer ${options.apiKey}`,
+                }
                 : {}),
         },
         body: JSON.stringify({
@@ -277,6 +276,8 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         elizaLogger.debug("DEBUG - Inside getLocalEmbedding function");
 
         try {
+            // Replace the static import with a dynamic import to prevent ARM64 issues
+            const LocalEmbeddingModelManager = (await import("./localembeddingManager.ts")).default;
             const embeddingManager = LocalEmbeddingModelManager.getInstance();
             return await embeddingManager.generateEmbedding(input);
         } catch (error) {

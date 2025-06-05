@@ -1,15 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "url";
-import { FlagEmbedding, EmbeddingModel } from "fastembed";
+// Remove the static import of fastembed to prevent ARM64 issues
+// import { FlagEmbedding, EmbeddingModel } from "fastembed";
 import elizaLogger from "./logger";
 
 class LocalEmbeddingModelManager {
     private static instance: LocalEmbeddingModelManager | null;
-    private model: FlagEmbedding | null = null;
+    private model: any | null = null; // Changed from FlagEmbedding to any
     private initPromise: Promise<void> | null = null;
     private initializationLock = false;
 
-    private constructor() {}
+    private constructor() { }
 
     public static getInstance(): LocalEmbeddingModelManager {
         if (!LocalEmbeddingModelManager.instance) {
@@ -70,6 +71,9 @@ class LocalEmbeddingModelManager {
         }
 
         try {
+            // Dynamic import to prevent ARM64 issues
+            const { FlagEmbedding, EmbeddingModel } = await import("fastembed");
+
             const fs = await import("fs");
             const cacheDir = (await this.getRootPath()) + "/cache/";
 
