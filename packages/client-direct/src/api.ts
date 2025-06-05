@@ -6,13 +6,15 @@ import path from "path";
 import fs from "fs";
 
 import {
-    type AgentRuntime,
+    AgentRuntime,
     elizaLogger,
     getEnvVariable,
     type UUID,
     validateCharacterConfig,
     ServiceType,
     type Character,
+    type IAgentRuntime,
+    type ClientInstance
 } from "@elizaos/core";
 
 // import type { TeeLogQuery, TeeLogService } from "@elizaos/plugin-tee-log";
@@ -54,7 +56,7 @@ function validateUUIDParams(
 export function createApiRouter(
     agents: Map<string, IAgentRuntime>,
     directClient: DirectClient
-):Router {
+): Router {
     const router = express.Router();
 
     router.use(cors());
@@ -123,10 +125,10 @@ export function createApiRouter(
         };
         if (!agentId) return;
 
-        const agent: AgentRuntime = agents.get(agentId);
+        const agent = agents.get(agentId);
 
         if (agent) {
-            agent.stop();
+            await (agent as AgentRuntime).stop();
             directClient.unregisterAgent(agent);
             res.status(204).json({ success: true });
         } else {
@@ -140,12 +142,12 @@ export function createApiRouter(
         };
         if (!agentId) return;
 
-        let agent: AgentRuntime = agents.get(agentId);
+        let agent = agents.get(agentId);
 
         // update character
         if (agent) {
-            // stop agent
-            agent.stop();
+            // stop agent - cast to AgentRuntime to access stop method
+            await (agent as AgentRuntime).stop();
             directClient.unregisterAgent(agent);
             // if it has a different name, the agentId will change
         }
@@ -441,17 +443,99 @@ export function createApiRouter(
     router.post("/agents/:agentId/stop", async (req, res) => {
         const agentId = req.params.agentId;
         console.log("agentId", agentId);
-        const agent: AgentRuntime = agents.get(agentId);
+        const agent = agents.get(agentId);
 
         // update character
         if (agent) {
-            // stop agent
-            agent.stop();
+            // stop agent - cast to AgentRuntime to access stop method
+            await (agent as AgentRuntime).stop();
             directClient.unregisterAgent(agent);
             // if it has a different name, the agentId will change
             res.json({ success: true });
         } else {
             res.status(404).json({ error: "Agent not found" });
+        }
+    });
+
+    // WhatsApp webhook verification endpoint (GET)
+    router.get("/webhook/whatsapp", async (req, res) => {
+        try {
+            elizaLogger.debug("WhatsApp webhook verification request received", {
+                mode: req.query["hub.mode"],
+                token: req.query["hub.verify_token"] ? "PRESENT" : "MISSING",
+                challenge: req.query["hub.challenge"] ? "PRESENT" : "MISSING"
+            });
+
+            // Get token from environment
+            const webhookToken = process.env.WHATSAPP_WEBHOOK_TOKEN;
+
+            if (!webhookToken) {
+                elizaLogger.error("WhatsApp webhook verification failed: Missing WHATSAPP_WEBHOOK_TOKEN");
+                return res.sendStatus(403);
+            }
+
+            // Verify token
+            const verified = req.query["hub.verify_token"] === webhookToken;
+
+            if (verified) {
+                elizaLogger.success("WhatsApp webhook verified successfully");
+                return res.send(req.query["hub.challenge"]);
+            } else {
+                elizaLogger.error("WhatsApp webhook verification failed: Invalid token");
+                return res.sendStatus(403);
+            }
+        } catch (error) {
+            elizaLogger.error("WhatsApp webhook verification error:", error);
+            return res.sendStatus(500);
+        }
+    });
+
+    // WhatsApp webhook events endpoint (POST)
+    router.post("/webhook/whatsapp", async (req, res) => {
+        try {
+            elizaLogger.debug("WhatsApp webhook event received");
+
+            // Validate webhook payload
+            if (!req.body || !req.body.object) {
+                elizaLogger.warn("Invalid WhatsApp webhook payload");
+                return res.sendStatus(400);
+            }
+
+            // Find agents with WhatsApp plugin
+            let processed = false;
+
+            for (const agent of agents.values()) {
+                // Look for whatsapp plugin
+                const whatsappPlugin = agent.plugins.find(p => p.name === "whatsapp");
+
+                if (whatsappPlugin) {
+                    // Try to find a client that can handle the webhook
+                    for (const client of agent.clients) {
+                        if (typeof (client as any).handleWebhook === 'function') {
+                            try {
+                                await (client as any).handleWebhook(req.body);
+                                processed = true;
+                                elizaLogger.debug(`WhatsApp webhook handled by agent: ${agent.character.name}`);
+                                break;
+                            } catch (err) {
+                                elizaLogger.error(`Error handling webhook: ${err}`);
+                            }
+                        }
+                    }
+
+                    if (processed) break;
+                }
+            }
+
+            if (!processed) {
+                elizaLogger.warn("No agents found with WhatsApp capability");
+            }
+
+            // Always return 200 to acknowledge receipt
+            return res.sendStatus(200);
+        } catch (error) {
+            elizaLogger.error("WhatsApp webhook processing error:", error);
+            return res.sendStatus(200);
         }
     });
 

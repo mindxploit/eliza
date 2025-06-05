@@ -19,8 +19,10 @@
     },
     "dependencies": {
         "@elizaos-plugins/client-discord": "workspace:0.25.6-alpha.1",
+        "@elizaos-plugins/client-telegram": "workspace:0.25.6-alpha.1",
         "@elizaos-plugins/client-twitter": "workspace:0.25.6-alpha.1",
         "@elizaos-plugins/plugin-web-search": "workspace:^",
+        "@elizaos-plugins/plugin-whatsapp": "workspace:0.25.6-alpha.1",
         "@elizaos-plugins/plugin-youtube-to-text": "workspace:^",
         "@elizaos/client-direct": "workspace:*",
         "@elizaos/core": "workspace:*",
