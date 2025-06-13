@@ -313,29 +313,36 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
                 createdAt: Date.now(),
             });
 
-            // Generate and store chunks
-            const chunks = await splitChunks(processedContent, 512, 20);
+            // Check if chunking is enabled via environment variable
+            const hasChunking = process.env.HAS_CHUNKING !== 'false';
 
-            for (const [index, chunk] of chunks.entries()) {
-                const chunkEmbeddingArray = await embed(this.runtime, chunk);
-                const chunkEmbedding = new Float32Array(chunkEmbeddingArray);
-                const chunkId = `${item.id}-chunk-${index}` as UUID;
+            if (hasChunking) {
+                // Generate and store chunks
+                const chunks = await splitChunks(processedContent, 512, 20);
 
-                await this.runtime.databaseAdapter.createKnowledge({
-                    id: chunkId,
-                    agentId: this.runtime.agentId,
-                    content: {
-                        text: chunk,
-                        metadata: {
-                            ...item.content.metadata,
-                            isChunk: true,
-                            originalId: item.id,
-                            chunkIndex: index,
+                for (const [index, chunk] of chunks.entries()) {
+                    const chunkEmbeddingArray = await embed(this.runtime, chunk);
+                    const chunkEmbedding = new Float32Array(chunkEmbeddingArray);
+                    const chunkId = `${item.id}-chunk-${index}` as UUID;
+
+                    await this.runtime.databaseAdapter.createKnowledge({
+                        id: chunkId,
+                        agentId: this.runtime.agentId,
+                        content: {
+                            text: chunk,
+                            metadata: {
+                                ...item.content.metadata,
+                                isChunk: true,
+                                originalId: item.id,
+                                chunkIndex: index,
+                            },
                         },
-                    },
-                    embedding: chunkEmbedding,
-                    createdAt: Date.now(),
-                });
+                        embedding: chunkEmbedding,
+                        createdAt: Date.now(),
+                    });
+                }
+            } else {
+                elizaLogger.info(`Chunking disabled for knowledge item ${item.id}`);
             }
         } catch (error) {
             elizaLogger.error(`Error processing knowledge ${item.id}:`, error);
@@ -557,61 +564,68 @@ export class RAGKnowledgeManager implements IRAGKnowledgeManager {
             });
             timeMarker("Main document storage");
 
-            // Step 4: Generate chunks
-            const chunks = await splitChunks(processedContent, 512, 20);
-            const totalChunks = chunks.length;
-            elizaLogger.info(`Generated ${totalChunks} chunks`);
-            timeMarker("Chunk generation");
+            // Check if chunking is enabled via environment variable
+            const hasChunking = process.env.HAS_CHUNKING !== 'false';
 
-            // Step 5: Process chunks with larger batches
-            const BATCH_SIZE = 10; // Increased batch size
-            let processedChunks = 0;
+            if (hasChunking) {
+                // Step 4: Generate chunks
+                const chunks = await splitChunks(processedContent, 512, 20);
+                const totalChunks = chunks.length;
+                elizaLogger.info(`Generated ${totalChunks} chunks`);
+                timeMarker("Chunk generation");
 
-            for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-                const batchStart = Date.now();
-                const batch = chunks.slice(
-                    i,
-                    Math.min(i + BATCH_SIZE, chunks.length)
-                );
+                // Step 5: Process chunks with larger batches
+                const BATCH_SIZE = 10; // Increased batch size
+                let processedChunks = 0;
 
-                // Process embeddings in parallel
-                const embeddings = await Promise.all(
-                    batch.map((chunk) => embed(this.runtime, chunk))
-                );
+                for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+                    const batchStart = Date.now();
+                    const batch = chunks.slice(
+                        i,
+                        Math.min(i + BATCH_SIZE, chunks.length)
+                    );
 
-                // Batch database operations
-                await Promise.all(
-                    embeddings.map(async (embeddingArray, index) => {
-                        const chunkId =
-                            `${scopedId}-chunk-${i + index}` as UUID;
-                        const chunkEmbedding = new Float32Array(embeddingArray);
+                    // Process embeddings in parallel
+                    const embeddings = await Promise.all(
+                        batch.map((chunk) => embed(this.runtime, chunk))
+                    );
 
-                        await this.runtime.databaseAdapter.createKnowledge({
-                            id: chunkId,
-                            agentId: this.runtime.agentId,
-                            content: {
-                                text: batch[index],
-                                metadata: {
-                                    source: file.path,
-                                    type: file.type,
-                                    isShared: file.isShared || false,
-                                    isChunk: true,
-                                    originalId: scopedId,
-                                    chunkIndex: i + index,
-                                    originalPath: file.path,
+                    // Batch database operations
+                    await Promise.all(
+                        embeddings.map(async (embeddingArray, index) => {
+                            const chunkId =
+                                `${scopedId}-chunk-${i + index}` as UUID;
+                            const chunkEmbedding = new Float32Array(embeddingArray);
+
+                            await this.runtime.databaseAdapter.createKnowledge({
+                                id: chunkId,
+                                agentId: this.runtime.agentId,
+                                content: {
+                                    text: batch[index],
+                                    metadata: {
+                                        source: file.path,
+                                        type: file.type,
+                                        isShared: file.isShared || false,
+                                        isChunk: true,
+                                        originalId: scopedId,
+                                        chunkIndex: i + index,
+                                        originalPath: file.path,
+                                    },
                                 },
-                            },
-                            embedding: chunkEmbedding,
-                            createdAt: Date.now(),
-                        });
-                    })
-                );
+                                embedding: chunkEmbedding,
+                                createdAt: Date.now(),
+                            });
+                        })
+                    );
 
-                processedChunks += batch.length;
-                const batchTime = (Date.now() - batchStart) / 1000;
-                elizaLogger.info(
-                    `[Batch Progress] ${file.path}: Processed ${processedChunks}/${totalChunks} chunks (${batchTime.toFixed(2)}s for batch)`
-                );
+                    processedChunks += batch.length;
+                    const batchTime = (Date.now() - batchStart) / 1000;
+                    elizaLogger.info(
+                        `[Batch Progress] ${file.path}: Processed ${processedChunks}/${totalChunks} chunks (${batchTime.toFixed(2)}s for batch)`
+                    );
+                }
+            } else {
+                elizaLogger.info(`[No Chunking] Chunking disabled for file ${file.path}, storing only main document`);
             }
 
             const totalTime = (Date.now() - startTime) / 1000;
