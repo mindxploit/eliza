@@ -10,6 +10,7 @@ import {
     ModelClass,
     settings,
     stringToUuid,
+    validateUuid,
     type AgentRuntime,
     type Client,
     type Content,
@@ -197,10 +198,10 @@ export class DirectClient {
             upload.single("file"),
             async (req: express.Request, res: express.Response) => {
                 const agentId = req.params.agentId;
-                const roomId = stringToUuid(
+                const roomId = validateUuid(req.body.roomId) ?? stringToUuid(
                     req.body.roomId ?? "default-room-" + agentId
                 );
-                const userId = stringToUuid(req.body.userId ?? "user");
+                const userId = validateUuid(req.body.userId) ?? stringToUuid(req.body.userId ?? "user");
 
                 let runtime = this.agents.get(agentId);
 
